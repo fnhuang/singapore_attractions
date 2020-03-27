@@ -268,7 +268,7 @@ class TfidfCluster():
             # thus, we take the difference in the square value
             denom = p**2 + dict2[w]**2
             diff = (p ** 2 - dict2[w] ** 2)/denom
-            wdiff.append((w, diff))
+            wdiff.append((w, diff, p**2, dict2[w]**2))
 
         wdiff = sorted(wdiff, key=lambda x: x[1], reverse=True)
 
@@ -329,7 +329,7 @@ class TfidfCluster():
                 sent = " ".join(w[0].split("_"))
                 prob_dist = self.sentiment_classifier.sentiment(sent)
 
-                if prob_dist[0] == self.sentiment and prob_dist[1] > 0.8:
+                if prob_dist[0] == self.sentiment and prob_dist[1] > 0.9:
                     rep_words.append(w)
 
             doc_pairs.setdefault(doc.name,[]).append((doc.location, rep_words))
