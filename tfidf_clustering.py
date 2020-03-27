@@ -333,8 +333,9 @@ class TfidfCluster():
                     rep_words.append(w)
 
             doc_pairs.setdefault(doc.name,[]).append((doc.location, rep_words))
+
             print("\r",end="")
-            print("Transforming data into dictionary", int(doc_count/len(self.id2doc)) * 100, "percent", end="", flush=True)
+            print("Transforming data into dictionary", int(doc_count/len(self.id2doc) * 100), "percent", end="", flush=True)
 
         # local-foreign cosine difference
         with open(f"{self.dir}/{self.sentiment}_results/local_v_foreign.txt","w",encoding="utf8") as gwriter:
@@ -384,10 +385,10 @@ class TfidfCluster():
 
                 cos_sim = spatial.distance.cosine(prob_dist1, prob_dist2)
                 denom = max(1, len(all_words)) # in case division of zero
-                gwriter.write(f"{doc_name},{len(comwords)/len(denom)}\n")
+                gwriter.write(f"{doc_name},{len(comwords)/denom}\n")
                 gwriter.flush()
                 print("\r",end="")
-                print("Calculating cosine sim", int(doc_count/len(doc_pairs)) * 100, "percent", end="", flush=True)
+                print("Calculating cosine sim", int(doc_count/len(doc_pairs) * 100), "percent", end="", flush=True)
         gwriter.close()
 
     def run(self, n_cluster, filter_xtrim):
@@ -435,12 +436,12 @@ class TfidfCluster():
         pickle.dump(self.kmeans_model, open(f"{self.dir}/{self.sentiment}_model/kmeans_model.pickle","wb"))
 
 if __name__ == "__main__":
-    dir = sys.argv[1]
-    sentiment = sys.argv[2]
-    model_dir = sys.argv[3]
-    model = sys.argv[4]
-    tc = TfidfCluster(dir, sentiment, model_dir, model)
-    #tc = TfidfCluster("tfidf_clustering","pos","sentiment_analysis","NB")
+    #dir = sys.argv[1]
+    #sentiment = sys.argv[2]
+    #model_dir = sys.argv[3]
+    #model = sys.argv[4]
+    #tc = TfidfCluster(dir, sentiment, model_dir, model)
+    tc = TfidfCluster("tfidf_clustering","neg","sentiment_analysis","NB")
     #tc.assess_k(0.8)
     #tc.run(14, 0.8)
     tc.get_local_foreigner_difference(1)
