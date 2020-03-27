@@ -334,7 +334,7 @@ class TfidfCluster():
 
             doc_pairs.setdefault(doc.name,[]).append((doc.location, rep_words))
             print("\r",end="")
-            print(f"Transforming data into dictionary {doc_count/len(self.id2doc * 100)} percent", end="", flush=True)
+            print(f"Transforming data into dictionary {doc_count/len(self.id2doc) * 100} percent", end="", flush=True)
 
         # local-foreign cosine difference
         with open(f"{self.dir}/{self.sentiment}_results/local_v_foreign.txt","w",encoding="utf8") as gwriter:
@@ -387,7 +387,7 @@ class TfidfCluster():
                 gwriter.write(f"{doc_name},{len(comwords)/len(denom)}\n")
                 gwriter.flush()
                 print("\r",end="")
-                print(f"Calculating cosine sim {doc_count/len(doc_pairs)} percent", end="", flush=True)
+                print(f"Calculating cosine sim {doc_count/len(doc_pairs) * 100} percent", end="", flush=True)
         gwriter.close()
 
     def run(self, n_cluster, filter_xtrim):
