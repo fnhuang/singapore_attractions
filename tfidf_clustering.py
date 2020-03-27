@@ -304,7 +304,9 @@ class TfidfCluster():
         # create doc_pair item = {battlebox.csv:[(sgp,[(battle,0.2),(box,0.1)]),
         # (ovs,[(hot,0.2),(tour,0.1)])]}
         doc_pairs = {}
+        doc_count = 0
         for doc_num in self.id2doc:
+            doc_count += 1
             doc = self.id2doc[doc_num]
 
             # get word probability distribution - it is l2 normalized
@@ -331,11 +333,14 @@ class TfidfCluster():
                     rep_words.append(w)
 
             doc_pairs.setdefault(doc.name,[]).append((doc.location, rep_words))
-
+            print("\r",end="")
+            print(f"Transforming data into dictionary {doc_count/len(self.id2doc * 100)} percent", end="", flush=True)
 
         # local-foreign cosine difference
         with open(f"{self.dir}/{self.sentiment}_results/local_v_foreign.txt","w",encoding="utf8") as gwriter:
+            doc_count = 0
             for doc_name in doc_pairs:
+                doc_count += 1
 
                 # find unique words
                 for loc_prob_tuple in doc_pairs[doc_name]:
@@ -381,6 +386,8 @@ class TfidfCluster():
                 denom = max(1, len(all_words)) # in case division of zero
                 gwriter.write(f"{doc_name},{len(comwords)/len(denom)}\n")
                 gwriter.flush()
+                print("\r",end="")
+                print(f"Calculating cosine sim {doc_count/len(doc_pairs)} percent", end="", flush=True)
         gwriter.close()
 
     def run(self, n_cluster, filter_xtrim):
