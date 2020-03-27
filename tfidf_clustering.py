@@ -378,7 +378,8 @@ class TfidfCluster():
                     prob_dist2.append(foreign_dict[w] if w in foreign_dict.keys() else 0)
 
                 cos_sim = spatial.distance.cosine(prob_dist1, prob_dist2)
-                gwriter.write(f"{doc_name},{len(comwords)/len(all_words)}\n")
+                denom = max(1, len(all_words)) # in case division of zero
+                gwriter.write(f"{doc_name},{len(comwords)/len(denom)}\n")
                 gwriter.flush()
         gwriter.close()
 
