@@ -9,6 +9,7 @@ from sklearn.cluster import KMeans
 from scipy.sparse import csr_matrix
 import numpy as np
 from sentiment_analysis import SentimentAnalyzer
+from scipy import spatial
 
 
 
@@ -255,6 +256,132 @@ class TfidfCluster():
         pickle.dump(self.tfidf_vectorizer, open(f"{self.dir}/{self.sentiment}_model/tfidf_vectorizer.pickle", "wb"))
         pickle.dump(self.tfidf_matrix,open(f"{self.dir}/{self.sentiment}_model/tfidf_matrix.pickle", "wb"))
 
+    # find uqwords of tuple1
+    def _find_comwords(self, dict1, dict2):
+        common_words = [w for w in dict1.keys() if w in dict2.keys()]
+        wdiff = []
+
+        for w in common_words:
+            p = dict1[w]
+
+            # w prob is l2 normalized, the sum of square of each word in a doc add up to 1
+            # thus, we take the difference in the square value
+            denom = p**2 + dict2[w]**2
+            diff = (p ** 2 - dict2[w] ** 2)/denom
+            wdiff.append((w, diff))
+
+        wdiff = sorted(wdiff, key=lambda x: x[1], reverse=True)
+
+        return wdiff
+
+    # find uqwords of tuple1
+    def _find_uqwords(self, dict1, dict2):
+        wdiff = []
+
+        words = [w for w in dict1.keys() if w not in dict2.keys()]
+
+        for w in words:
+            p = dict1[w]
+
+            # w prob is l2 normalized, the sum of square of each word in a doc add up to 1
+            # thus, we take the difference in the square value
+            diff = p**2
+            wdiff.append((w, diff))
+
+        wdiff = sorted(wdiff, key=lambda x: x[1], reverse=True)
+
+        return wdiff
+
+    def get_local_foreigner_difference(self, filter_xtrim):
+
+        if len(self.id2doc) == 0:
+            os.makedirs(os.path.dirname(f"{self.dir}/{self.sentiment}_model/"), exist_ok=True)
+            documents = self.prepare_documents(filter_xtrim)
+            self.transform_into_featuresets(documents)
+
+        os.makedirs(os.path.dirname(f"{self.dir}/{self.sentiment}_results/local_v_foreign/"), exist_ok=True)
+
+        # create doc_pair item = {battlebox.csv:[(sgp,[(battle,0.2),(box,0.1)]),
+        # (ovs,[(hot,0.2),(tour,0.1)])]}
+        doc_pairs = {}
+        for doc_num in self.id2doc:
+            doc = self.id2doc[doc_num]
+
+            # get word probability distribution - it is l2 normalized
+            prob_dist = csr_matrix.toarray(self.tfidf_matrix[doc_num, :])[0]
+            # print(np.sum(np.square(prob_dist)))
+
+            # get term (features) and its probability in descending format
+            sorted_indices = np.argsort(prob_dist)[::-1]
+            sorted_features = np.array(self.tfidf_vectorizer.get_feature_names())[sorted_indices]
+
+            temp = [i for i in prob_dist]
+            temp.sort()
+            sorted_prob = temp[::-1]
+
+            word_prob = list(zip(sorted_features, sorted_prob))
+
+            # keep words with probability more than 0 and sentiment prob is larger than 0.8
+            rep_words = []
+            for w in [w for w in word_prob if w[1] > 0]:
+                sent = " ".join(w[0].split("_"))
+                prob_dist = self.sentiment_classifier.sentiment(sent)
+
+                if prob_dist[0] == self.sentiment and prob_dist[1] > 0.8:
+                    rep_words.append(w)
+
+            doc_pairs.setdefault(doc.name,[]).append((doc.location, rep_words))
+
+
+        # local-foreign cosine difference
+        with open(f"{self.dir}/{self.sentiment}_results/local_v_foreign.txt","w",encoding="utf8") as gwriter:
+            for doc_name in doc_pairs:
+
+                # find unique words
+                for loc_prob_tuple in doc_pairs[doc_name]:
+                    if loc_prob_tuple[0] == "sgp":
+                        local_pdist = loc_prob_tuple[1]
+                    else:
+                        foreign_pdist = loc_prob_tuple[1]
+
+                local_dict = {k: v for (k, v) in local_pdist}
+                foreign_dict = {k: v for (k, v) in foreign_pdist}
+
+
+                wdiff = self._find_uqwords(local_dict, foreign_dict)
+                filename = doc_name.replace(".csv", "") + "_sgp.txt"
+                with open(f"{self.dir}/{self.sentiment}_results/local_v_foreign/{filename}","w",
+                          encoding="utf8") as writer:
+                    writer.writelines([f"{w}\n" for w in wdiff])
+
+
+                wdiff = self._find_uqwords(foreign_dict, local_dict)
+                filename = doc_name.replace(".csv", "") + "_ovs.txt"
+                with open(f"{self.dir}/{self.sentiment}_results/local_v_foreign/{filename}", "w",
+                          encoding="utf8") as writer:
+                    writer.writelines([f"{w}\n" for w in wdiff])
+
+                comwords = self._find_comwords(local_dict, foreign_dict)
+                filename = doc_name.replace(".csv", "") + "_com.txt"
+                with open(f"{self.dir}/{self.sentiment}_results/local_v_foreign/{filename}", "w",
+                          encoding="utf8") as writer:
+                    writer.writelines([f"{w}\n" for w in comwords])
+
+                # get cosine similarity
+                all_words = set([w[0] for w in local_pdist])
+                all_words.update(set([w[0] for w in foreign_pdist]))
+
+                prob_dist1 = []
+                prob_dist2 = []
+                for w in all_words:
+                    prob_dist1.append(local_dict[w] if w in local_dict.keys() else 0)
+                    prob_dist2.append(foreign_dict[w] if w in foreign_dict.keys() else 0)
+
+                cos_sim = spatial.distance.cosine(prob_dist1, prob_dist2)
+                gwriter.write(f"{doc_name},{len(comwords)/len(all_words)}\n")
+                gwriter.flush()
+        gwriter.close()
+
     def run(self, n_cluster, filter_xtrim):
         if len(self.id2doc) == 0:
             os.makedirs(os.path.dirname(f"{self.dir}/{self.sentiment}_model/"), exist_ok=True)
@@ -265,13 +392,12 @@ class TfidfCluster():
 
         print("total words:", len(self.tfidf_vectorizer.get_feature_names()))
 
-        os.makedirs(os.path.dirname(f"{self.dir}/{self.sentiment}_results/"), exist_ok=True)
+        os.makedirs(os.path.dirname(f"{self.dir}/{self.sentiment}_results/clustering/"), exist_ok=True)
         print("Topics clusters found")
         for n in range(0, n_cluster):
             print("Topic",n)
             indices = [i for i, x in enumerate(kmeans.labels_) if x == n]
             docs_in_the_cluster = [(self.id2doc[i].name, self.id2doc[i].location, self.id2doc[i].sentiment) for i in indices]
-            print(docs_in_the_cluster)
 
             sorted_indices = np.argsort(kmeans.cluster_centers_[n])[::-1]
             sorted_features = np.array(self.tfidf_vectorizer.get_feature_names())[sorted_indices]
@@ -281,6 +407,7 @@ class TfidfCluster():
             sorted_prob = center_copy[::-1]
 
             word_prob = list(zip(sorted_features, sorted_prob))
+
             rep_words = []
             for w in [w for w in word_prob if w[1] > 0]:
                 sent = " ".join(w[0].split("_"))
@@ -290,7 +417,7 @@ class TfidfCluster():
                     and prob_dist[1] > 0.8:
                     rep_words.append(w)
 
-            with open(f"{self.dir}/{self.sentiment}_results/topic_{n}.txt","w",encoding="utf8") as writer:
+            with open(f"{self.dir}/{self.sentiment}_results/clustering/topic_{n}.txt","w",encoding="utf8") as writer:
                 writer.write(f"{docs_in_the_cluster}\n")
                 for w in rep_words:
                     writer.write(f"{w[0]},{w[1]}\n")
@@ -302,5 +429,6 @@ class TfidfCluster():
 if __name__ == "__main__":
     tc = TfidfCluster("tfidf_clustering","pos","sentiment_analysis","NB")
     #tc.assess_k(0.8)
-    tc.run(10, 0.8)
+    #tc.run(14, 0.8)
+    tc.get_local_foreigner_difference(1)
 
