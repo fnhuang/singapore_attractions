@@ -387,7 +387,7 @@ class TfidfCluster():
                 gwriter.write(f"{doc_name},{len(comwords)/len(denom)}\n")
                 gwriter.flush()
                 print("\r",end="")
-                print("Calculating cosine sim", int(doc_count/len(doc_pairs) * 100, "percent", end="", flush=True)
+                print("Calculating cosine sim", int(doc_count/len(doc_pairs)) * 100, "percent", end="", flush=True)
         gwriter.close()
 
     def run(self, n_cluster, filter_xtrim):
