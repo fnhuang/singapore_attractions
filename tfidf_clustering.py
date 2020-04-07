@@ -460,14 +460,14 @@ class TfidfCluster():
 
 
             wdiff = self.rank_words(local_dict)
-            filename = doc_name.replace(".csv", "") + "_sgp.txt"
+            filename = doc_name.replace(".csv", "") + "_sgp.csv"
             with open(f"{self.dir}/{self.sentiment}_results/local_v_foreign/{filename}","w",
                       encoding="utf8") as writer:
                 writer.writelines([f"{w[0]},{w[1]}\n" for w in wdiff])
 
 
             wdiff = self.rank_words(foreign_dict)
-            filename = doc_name.replace(".csv", "") + "_ovs.txt"
+            filename = doc_name.replace(".csv", "") + "_ovs.csv"
             with open(f"{self.dir}/{self.sentiment}_results/local_v_foreign/{filename}", "w",
                       encoding="utf8") as writer:
                 writer.writelines([f"{w[0]},{w[1]}\n" for w in wdiff])
