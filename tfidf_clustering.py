@@ -284,7 +284,8 @@ class TfidfCluster():
             pos_tags = nltk.pos_tag(words)
             taken_indices = []
 
-            allowed_type = [(preprocess.ADJ,preprocess.NOUN),(preprocess.NOUN, preprocess.NOUN)]
+            #allowed_type = [(preprocess.ADJ,preprocess.NOUN),(preprocess.NOUN, preprocess.NOUN)]
+            allowed_type = [(preprocess.ADJ, preprocess.NOUN)]
 
             for at in allowed_type:
                 for i in range(0, len(pos_tags)-1):
@@ -303,7 +304,8 @@ class TfidfCluster():
 
 
             for id in [i for i in range(0, len(pos_tags)) if i not in taken_indices]:
-                if pos_tags[id][1] in preprocess.NOUN or pos_tags[id][1] in preprocess.ADJ:
+                #if pos_tags[id][1] in preprocess.NOUN or pos_tags[id][1] in preprocess.ADJ:
+                if pos_tags[id][1] in preprocess.ADJ:
                     custom_words.append(pos_tags[id][0])
 
         return " ".join(custom_words)
