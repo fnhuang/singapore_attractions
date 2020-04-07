@@ -303,7 +303,7 @@ class TfidfCluster():
 
 
             for id in [i for i in range(0, len(pos_tags)) if i not in taken_indices]:
-                if pos_tags[id][1] in preprocess.ADV or pos_tags[id][1] in preprocess.NOUN or pos_tags[id][1] in preprocess.ADJ:
+                if pos_tags[id][1] in preprocess.NOUN or pos_tags[id][1] in preprocess.ADJ:
                     custom_words.append(pos_tags[id][0])
 
         return " ".join(custom_words)
@@ -429,13 +429,13 @@ class TfidfCluster():
 
             word_prob = list(zip(sorted_features, sorted_prob))
 
-            # keep words with probability more than 0 and sentiment prob is larger than 0.8
+            # keep words with probability more than 0 and sentiment prob is larger than 0.9
             rep_words = []
             for w in [w for w in word_prob if w[1] > 0]:
                 sent = " ".join(w[0].split("_"))
                 prob_dist = self.sentiment_classifier.sentiment(sent)
 
-                if prob_dist[0] == self.sentiment and prob_dist[1] > 0.9:
+                if prob_dist[0] == self.sentiment and prob_dist[1] > 0.8:
                     rep_words.append(w)
 
             doc_pairs.setdefault(doc.name,[]).append((doc.location, rep_words))
