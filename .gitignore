@@ -4,3 +4,4 @@ sentiment_analysis
 sentiment_preprocess
 tfidf_clustering
 tfidf_preprocess
+visualize

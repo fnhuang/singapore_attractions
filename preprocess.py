@@ -121,8 +121,48 @@ class Preprocessor():
             with open(f"{self.dir}/preprocessing_done.txt","a",encoding="utf8") as writer:
                 writer.write(f"{file}\n")
 
+    def get_local_visitor_stats(self):
+
+        with open(f"{self.dir}/local_visitor_stat.csv","w",encoding="utf8",newline="") as writer:
+            csvw = csv.writer(writer)
+            csvw.writerow(["filename","l_reviews","v_reviews","l_avg_ratings","v_avg_ratings"])
+
+            file_count = 0
+
+            all_files = os.listdir(f"{self.dir}/data")
+
+            for filename in all_files:
+                l_reviews = 0
+                v_reviews = 0
+                l_ratings = 0
+                v_ratings = 0
+
+                reader = open(f"{self.dir}/data/{filename}", "r", encoding="utf8")
+                csvr = csv.DictReader(reader)
+
+                for row in csvr:
+                    if "singapore" in row["reviewer_location"].lower():
+                        l_reviews += 1
+                        l_ratings += int(row["review_star"])
+                    else:
+                        v_reviews += 1
+                        v_ratings += int(row["review_star"])
+
+                l_avg_ratings = l_ratings * 1.0 / l_reviews / 10
+                v_avg_ratings = v_ratings * 1.0 / v_reviews / 10
+
+                csvw.writerow([filename, l_reviews, v_reviews, l_avg_ratings, v_avg_ratings])
+                writer.flush()
+
+                file_count += 1
+                print("\r",end="")
+                print(f"Processing in progress...{file_count * 100.0 / len(all_files)}%", end="", flush=True)
+
+            reader.close()
+            writer.close()
+
 if __name__ == "__main__":
     #file_dir = sys.argv[1]
     file_dir = "tfidf_preprocess"
     ppc = Preprocessor(file_dir)
-    ppc.run()
+    ppc.get_local_visitor_stats()
