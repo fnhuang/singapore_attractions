@@ -125,7 +125,8 @@ class Preprocessor():
 
         with open(f"{self.dir}/local_visitor_stat.csv","w",encoding="utf8",newline="") as writer:
             csvw = csv.writer(writer)
-            csvw.writerow(["filename","l_reviews","v_reviews","l_avg_ratings","v_avg_ratings"])
+            csvw.writerow(["filename","l_reviews","v_reviews","a_reviews",
+                           "l_avg_ratings","v_avg_ratings","a_avg_ratings"])
 
             file_count = 0
 
@@ -151,7 +152,12 @@ class Preprocessor():
                 l_avg_ratings = l_ratings * 1.0 / l_reviews / 10
                 v_avg_ratings = v_ratings * 1.0 / v_reviews / 10
 
-                csvw.writerow([filename, l_reviews, v_reviews, l_avg_ratings, v_avg_ratings])
+                a_reviews = l_reviews + v_reviews
+                a_ratings = v_ratings + l_ratings
+                a_avg_ratings = a_ratings * 1.0 / a_reviews/ 10
+
+                csvw.writerow([filename, l_reviews, v_reviews, l_avg_ratings, v_avg_ratings,
+                               a_reviews, a_avg_ratings])
                 writer.flush()
 
                 file_count += 1
@@ -160,6 +166,7 @@ class Preprocessor():
 
             reader.close()
             writer.close()
+
 
 if __name__ == "__main__":
     #file_dir = sys.argv[1]

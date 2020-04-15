@@ -22,6 +22,48 @@ class Visualize():
     def _rgb2hex(self, color_list):
         return "#{:02x}{:02x}{:02x}".format(color_list[0], color_list[1], color_list[2])
 
+    def _get_catego(self, li, v):
+        if v >= np.min(li) and v < np.percentile(li,25):
+            return "very low"
+        elif v >= np.percentile(li,25) and v < np.percentile(li,40):
+            return "low"
+        elif v >= np.percentile(li,40) and v < np.percentile(li,60):
+            return "med"
+        elif v >= np.percentile(li,60) and v < np.percentile(li,75):
+            return "high"
+        else:
+            return "very high"
+
+    def get_local_visitor_stats(self):
+        info = pd.read_csv(f"{self.dir}/local_visitor_stat.csv")
+
+        l_reviews = list(info["l_reviews"])
+        v_reviews = list(info["v_reviews"])
+
+        l_ratings = list(info["l_avg_ratings"])
+        v_ratings = list(info["v_avg_ratings"])
+
+        reviews_data = [l_reviews, v_reviews]
+        ratings_data = [l_ratings, v_ratings]
+
+        # Create a figure instance
+        fig = plt.figure(1, figsize=(9, 6))
+
+        # Create an axes instance
+        ax = fig.add_subplot(111)
+
+        ax.set_title("Locals vs Visitors Ratings")
+
+        # Create the boxplot
+        bp = ax.boxplot(ratings_data, showfliers=False)
+        plt.xticks([1, 2], ['locals', 'visitors'])
+        #plt.show()
+
+
+        info["lrev_catego"] = [self._get_catego(l_reviews, v) for v in l_reviews]
+
+        print(info.head(5))
+
     def get_basic_file_info(self):
         info = pd.read_csv(f"{self.dir}/{self.file_name}")
 
@@ -218,4 +260,4 @@ class Visualize():
 
 
 viz = Visualize("visualize","top300.csv")
-viz.cluster_location()
+viz.get_local_visitor_stats()
