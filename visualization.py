@@ -39,12 +39,14 @@ class Visualize():
 
         l_reviews = list(info["l_reviews"])
         v_reviews = list(info["v_reviews"])
+        a_reviews = list(info["a_reviews"])
 
         l_ratings = list(info["l_avg_ratings"])
         v_ratings = list(info["v_avg_ratings"])
+        a_ratings = list(info["a_avg_ratings"])
 
-        reviews_data = [l_reviews, v_reviews]
-        ratings_data = [l_ratings, v_ratings]
+        reviews_data = [l_reviews, v_reviews, a_reviews]
+        ratings_data = [l_ratings, v_ratings, a_ratings]
 
         # Create a figure instance
         fig = plt.figure(1, figsize=(9, 6))
@@ -52,12 +54,12 @@ class Visualize():
         # Create an axes instance
         ax = fig.add_subplot(111)
 
-        ax.set_title("Locals vs Visitors Ratings")
+        ax.set_title("Locals vs Visitors Reviews")
 
         # Create the boxplot
-        bp = ax.boxplot(ratings_data, showfliers=False)
-        plt.xticks([1, 2], ['locals', 'visitors'])
-        #plt.show()
+        bp = ax.boxplot(reviews_data, showfliers=False)
+        plt.xticks([1, 2, 3], ['locals', 'visitors', "all"])
+        plt.show()
 
 
         info["lrev_catego"] = [self._get_catego(l_reviews, v) for v in l_reviews]

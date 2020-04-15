@@ -156,7 +156,7 @@ class Preprocessor():
                 a_ratings = v_ratings + l_ratings
                 a_avg_ratings = a_ratings * 1.0 / a_reviews/ 10
 
-                csvw.writerow([filename, l_reviews, v_reviews, l_avg_ratings, v_avg_ratings,
+                csvw.writerow([filename, l_reviews, v_reviews, a_reviews, v_avg_ratings,
                                a_reviews, a_avg_ratings])
                 writer.flush()
 
