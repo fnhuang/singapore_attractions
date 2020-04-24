@@ -10,7 +10,7 @@ import csv
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
-pd.set_option('display.max_columns', 8)
+pd.set_option('display.max_columns', 15)
 pd.set_option('display.max_rows', 300)
 
 class Visualize():
@@ -18,12 +18,13 @@ class Visualize():
     def __init__(self, dir, file_name):
         self.dir = dir
         self.file_name = file_name
+        self.tfc = TfidfCluster("","","","")
 
     def _rgb2hex(self, color_list):
         return "#{:02x}{:02x}{:02x}".format(color_list[0], color_list[1], color_list[2])
 
     def _get_catego(self, li, v):
-        if v >= np.min(li) and v < np.percentile(li,25):
+        if v < np.percentile(li,25):
             return "very low"
         elif v >= np.percentile(li,25) and v < np.percentile(li,40):
             return "low"
@@ -33,6 +34,93 @@ class Visualize():
             return "high"
         else:
             return "very high"
+
+    def get_local_visitor_category(self, tag, l_column, v_column):
+        # get_info
+        info = pd.read_csv(f"{self.dir}/local_visitor_stat.csv")
+        basic_info = self.get_basic_file_info()
+        info = pd.merge(info, basic_info, on="csv", how="inner")
+        info["location"] = info.apply(lambda x: self._get_locational_cluster(x.latitude, x.longitude),
+                                      axis=1)
+
+        l_reviews = list(info["l_reviews"])
+        v_reviews = list(info["v_reviews"])
+        a_reviews = list(info["a_reviews"])
+
+        l_ratings = list(info["l_avg_ratings"])
+        v_ratings = list(info["v_avg_ratings"])
+        a_ratings = list(info["a_avg_ratings"])
+
+        info["lrev_catego"] = [self._get_catego(a_reviews, v) for v in l_reviews]
+        info["vrev_catego"] = [self._get_catego(a_reviews, v) for v in v_reviews]
+        info["lrat_catego"] = [self._get_catego(a_ratings, v) for v in l_ratings]
+        info["vrat_catego"] = [self._get_catego(a_ratings, v) for v in v_ratings]
+
+        #print(info["tag"])
+        subinfo = info[info["tag"] == tag]
+        print(subinfo[(subinfo["lrat_catego"] == "very high") & (subinfo["vrat_catego"] == "high")])
+
+        group_by_review = subinfo.groupby([l_column, v_column]).size().reset_index().rename(columns={0: 'count'})
+        total = np.sum(group_by_review["count"])
+        group_by_review["percentage"] = [v/total for v in group_by_review["count"]]
+
+        print(group_by_review.sort_values(by=['percentage'], ascending=False))
+
+    def _make_grouped_bar_plot(self, df, l_column, v_column, obj_name):
+        #print(df[(df["lrev_catego"] == "very high") & (df["vrev_catego"] == "med")])
+
+        group_by_review = df.groupby([l_column, v_column]).size().reset_index().rename(columns={0: 'count'})
+        #print(group_by_review)
+
+        categories = ["very low", "low", "med", "high", "very high"]
+        datas = []
+        for v_catego in categories:
+            sub_data = []
+            for l_catego in categories:
+                subg = group_by_review[
+                    (group_by_review[l_column] == l_catego) & (group_by_review[v_column] == v_catego)]
+
+                count = int(subg["count"]) if len(subg) > 0 else 0
+
+                sub_data.append(count)
+            datas.append(sub_data)
+
+        fig, ax = plt.subplots()
+
+        color_list = ['b', 'g', 'r', "yellow", "magenta"]
+        gap = 0.8 / len(datas)
+
+        def autolabel(rects):
+            """Attach a text label above each bar in *rects*, displaying its height."""
+            for rect in rects:
+                height = rect.get_height()
+                ax.annotate('{}'.format(height),
+                            xy=(rect.get_x() + rect.get_width() / 2, height),
+                            xytext=(0, 3),  # 3 points vertical offset
+                            textcoords="offset points",
+                            ha='center', va='bottom')
+
+        for i, row in enumerate(datas):
+            #print(i, row)
+            X = np.arange(len(row))
+            rects = ax.bar(X + i * gap, row,
+                           width=gap,
+                           color=color_list[i % len(color_list)], edgecolor="black", label=f"visitor:{categories[i]}")
+            autolabel(rects)
+
+        x = np.arange(len(categories), step=1.15)
+        ax.set_xticks(x)
+        ax.set_xticklabels(categories)
+        ax.legend()
+
+        ax.set_title(f"Number of {obj_name.capitalize()}: Locals vs Visitors")
+
+        fig.tight_layout()
+
+        plt.xlabel(f"local {obj_name}")
+        plt.ylabel(f"# poi")
+
+        plt.show()
 
     def get_local_visitor_stats(self):
         info = pd.read_csv(f"{self.dir}/local_visitor_stat.csv")
@@ -56,15 +144,71 @@ class Visualize():
 
         ax.set_title("Locals vs Visitors Reviews")
 
-        # Create the boxplot
+
+        # Create boxplot of reviews and ratings
         bp = ax.boxplot(reviews_data, showfliers=False)
         plt.xticks([1, 2, 3], ['locals', 'visitors', "all"])
-        plt.show()
+        #plt.show()
+
+        plt.close()
+
+        info["lrev_catego"] = [self._get_catego(a_reviews, v) for v in l_reviews]
+        info["vrev_catego"] = [self._get_catego(a_reviews, v) for v in v_reviews]
+        info["lrat_catego"] = [self._get_catego(a_ratings, v) for v in l_ratings]
+        info["vrat_catego"] = [self._get_catego(a_ratings, v) for v in v_ratings]
+
+        # pearson correl info
+        review_stats_correl = pearsonr(np.array(l_reviews).astype(np.float),
+                                       np.array(v_reviews).astype(np.float))
+        print(review_stats_correl)
+
+        rating_stats_correl = pearsonr(np.array(l_ratings).astype(np.float),
+                                       np.array(v_ratings).astype(np.float))
+        print(rating_stats_correl)
+
+        # create grouped bar plot of locals vs visitors statistics
+        '''self._make_grouped_bar_plot(info, "lrev_catego", "vrev_catego", "review")
+        plt.close()
+
+        self._make_grouped_bar_plot(info, "lrat_catego", "vrat_catego", "rating")
+        plt.close()'''
+        #print(info)
+
+        return info
 
 
-        info["lrev_catego"] = [self._get_catego(l_reviews, v) for v in l_reviews]
 
-        print(info.head(5))
+    def get_local_visitor_specs(self, l_catego, v_catego, l_column, v_column):
+        # get_info
+        info = pd.read_csv(f"{self.dir}/local_visitor_stat.csv")
+        basic_info = self.get_basic_file_info()
+        info = pd.merge(info, basic_info, on="csv", how="inner")
+        info["location"] = info.apply(lambda x: self._get_locational_cluster(x.latitude, x.longitude),
+                                            axis=1)
+
+        l_reviews = list(info["l_reviews"])
+        v_reviews = list(info["v_reviews"])
+        a_reviews = list(info["a_reviews"])
+
+        l_ratings = list(info["l_avg_ratings"])
+        v_ratings = list(info["v_avg_ratings"])
+        a_ratings = list(info["a_avg_ratings"])
+
+
+        info["lrev_catego"] = [self._get_catego(a_reviews, v) for v in l_reviews]
+        info["vrev_catego"] = [self._get_catego(a_reviews, v) for v in v_reviews]
+        info["lrat_catego"] = [self._get_catego(a_ratings, v) for v in l_ratings]
+        info["vrat_catego"] = [self._get_catego(a_ratings, v) for v in v_ratings]
+
+
+        subinfo = info[(info[l_column] == l_catego) & (info[v_column] == v_catego)]
+        #print(subinfo)
+        specs = self._get_specific_info(subinfo)
+        specs = specs.drop(["l_reviews", "v_reviews", "a_reviews",
+                            "l_avg_ratings", "v_avg_ratings", "a_avg_ratings",
+                            "count", "total"], axis=1)
+        #specs = specs[["concentration", "%south", "%centre", "%north", "%west", "%east"]]
+        print(specs.sort_values(by=['concentration'], ascending=False))
 
     def get_basic_file_info(self):
         info = pd.read_csv(f"{self.dir}/{self.file_name}")
@@ -88,14 +232,34 @@ class Visualize():
 
         return info
 
-    def get_tag_info(self):
-        basic_info = self.get_basic_file_info()
-        basic_info = basic_info.drop(["done","csv","latitude","longitude"],axis=1)
+    def get_tag_info(self, reviewer):
+        if reviewer == "visitor":
+            basic_info = self.get_basic_file_info()
+            lv_info = self.get_local_visitor_stats()[["csv", "v_reviews", "v_avg_ratings"]]
+            basic_info = pd.merge(basic_info, lv_info, on="csv", how="inner")
+            basic_info = basic_info.drop(["reviews", "rating"], axis=1)
+            basic_info = basic_info.rename(columns={"v_reviews": "reviews", "v_avg_ratings": "rating"})
+        elif reviewer == "local":
+            basic_info = self.get_basic_file_info()
+            lv_info = self.get_local_visitor_stats()[["csv","l_reviews","l_avg_ratings"]]
+            basic_info = pd.merge(basic_info, lv_info, on="csv", how="inner")
+            basic_info = basic_info.drop(["reviews", "rating"], axis=1)
+            basic_info = basic_info.rename(columns={"l_reviews": "reviews", "l_avg_ratings": "rating"})
+        else:
+            basic_info = self.get_basic_file_info()
+            basic_info = basic_info.drop(["done", "csv", "latitude", "longitude"], axis=1)
+
 
         grouped = basic_info.groupby(["tag"])
 
         tag_info = grouped.mean()
         tag_info["count"] = grouped[["tag"]].count()
+
+        sd_li = list(grouped[["reviews"]].std()["reviews"])
+        mu_li = list(tag_info["reviews"])
+        tag_info["reviews_sd"] = [i / j for i, j in zip(sd_li, mu_li)]
+
+        tag_info["rating_sd"] = grouped[["rating"]].std()
 
         #get correlation info
         review_vs_rating = pearsonr(np.array(tag_info["reviews"]).astype(np.float),
@@ -105,9 +269,19 @@ class Visualize():
         rating_vs_count = pearsonr(np.array(tag_info["rating"]).astype(np.float),
                                    np.array(tag_info["count"]).astype(np.float))
 
+        reviews = list(tag_info["reviews"])
+        tag_info["rev_catego"] = [self._get_catego(reviews, v) for v in reviews]
+
+        ratings = list(tag_info["rating"])
+        tag_info["rat_catego"] = [self._get_catego(ratings, v) for v in ratings]
+
+        counts = list(tag_info["count"])
+        tag_info["count_catego"] = [self._get_catego(counts, v) for v in counts]
+
+
         #print(review_vs_rating, review_vs_count, rating_vs_count)
 
-        #print(tag_info.sort_values(by=['rating'], ascending=False))
+        print(tag_info.sort_values(by=['reviews', 'rating', 'count'], ascending=False))
 
         return tag_info
 
@@ -127,8 +301,9 @@ class Visualize():
             return "unclustered"
 
     def _get_specific_info(self, sub_info):
-        tag_info = self.get_tag_info()
+        tag_info = self.get_tag_info("all")
 
+        #print(sub_info)
         # includes get tag, % and location
         grouped = sub_info.groupby(["tag"])
         group_info = grouped.mean()
@@ -157,7 +332,7 @@ class Visualize():
 
 
 
-    def cluster_location(self):
+    def cluster_location(self, reviewer_type):
         basic_info = self.get_basic_file_info()
 
         #coords = basic_info[["latitude","longitude"]].values
@@ -167,7 +342,6 @@ class Visualize():
 
         clusters = list(basic_info["location"])
 
-        #print(basic_info)
 
         #get info for each cluster
         for cluster in set(clusters):
@@ -177,6 +351,7 @@ class Visualize():
             print(cluster, ", total attractions:", sum(spec["count"]))
             print(spec.sort_values(by=["concentration"], ascending=False))
 
+        #print(basic_info.sort_values(by=["location"], ascending=False))
 
         #draw map
         BBox = ((103.5599, 104.1353, 1.1858, 1.5036))
@@ -212,8 +387,9 @@ class Visualize():
         plt.legend()
         plt.show()
 
-    def cluster_tag_info(self, no_clust):
-        tag_info = self.get_tag_info(self.file_name)
+    def cluster_tag_info(self, no_clust, incl_quant):
+        tag_info = self.get_tag_info("all")
+        #print(tag_info)
 
         print("quantity boxplot")
         print(np.min(tag_info["count"]), np.percentile(tag_info["count"], 25), np.percentile(tag_info["count"], 40),
@@ -228,13 +404,28 @@ class Visualize():
               np.percentile(tag_info["rating"], 50), np.percentile(tag_info["rating"], 60), np.percentile(tag_info["rating"], 75),
               np.max(tag_info["rating"]))
 
+        ct_vals = list(tag_info["count"])
+        tag_info["count_scaled"] = [(c - min(ct_vals)) / (max(ct_vals) - min(ct_vals)) for c in ct_vals]
+
+        rev_vals = list(tag_info["reviews"])
+        tag_info["reviews_scaled"] = [(c - min(rev_vals)) / (max(rev_vals) - min(rev_vals)) for c in rev_vals]
+
+        rate_vals = list(tag_info["rating"])
+        tag_info["rating_scaled"] = [(c - min(rate_vals)) / (max(rate_vals) - min(rate_vals)) for c in rate_vals]
+
         #data preparation
         data = []
         id2tag = {}
         id = 0
         for tag, row in tag_info.iterrows():
             id2tag[id] = tag
-            data.append([row["count"], row["reviews"], row["rating"]])
+            if incl_quant:
+                data.append([row["count_scaled"], row["reviews_scaled"], row["rating_scaled"]])
+                vals = [ct_vals, rev_vals, rate_vals]
+            else:
+                data.append([row["reviews_scaled"], row["rating_scaled"]])
+                vals = [rev_vals, rate_vals]
+
             id += 1
 
         data = np.array(data)
@@ -253,13 +444,21 @@ class Visualize():
                 indices = [i for i, x in enumerate(kmeans.labels_) if x == n]
                 attr_in_the_cluster = [id2tag[i] for i in indices]
                 print(attr_in_the_cluster)
-                print("number,reviews,rating_mean,rating_std")
+                #print(tag_info[tag_info.index.isin(attr_in_the_cluster)])
+                #print("rating sd",np.average(tag_info[tag_info.index.isin(attr_in_the_cluster)]["rating_sd"]))
+                print("number,reviews,rating")
                 to_be_printed = ""
                 for i in range(0, len(kmeans.cluster_centers_[n])):
-                    to_be_printed += f"{kmeans.cluster_centers_[n][i]},"
+                    z_score = kmeans.cluster_centers_[n][i]
+                    to_be_printed += f"{z_score * (max(vals[i]) - min(vals[i])) + min(vals[i])},"
                 print(to_be_printed[0:len(to_be_printed) - 1])
 
 
 
 viz = Visualize("visualize","top300.csv")
-viz.get_local_visitor_stats()
+#viz.cluster_tag_info(10, False)
+viz.get_tag_info("local")
+#viz.get_local_visitor_stats()
+#viz.cluster_location()
+#viz.get_local_visitor_specs("low","med", "lrat_catego", "vrat_catego")
+#viz.get_local_visitor_category("theatres", "lrat_catego", "vrat_catego")
