@@ -170,6 +170,6 @@ class Preprocessor():
 
 if __name__ == "__main__":
     #file_dir = sys.argv[1]
-    file_dir = "tfidf_preprocess"
+    file_dir = "yelp_preprocess"
     ppc = Preprocessor(file_dir)
     ppc.get_local_visitor_stats()

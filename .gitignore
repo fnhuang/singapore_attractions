@@ -2,6 +2,7 @@
 __pycache__
 sentiment_analysis
 sentiment_preprocess
+yelp_preprocess
 tfidf_clustering
 tfidf_preprocess
 visualize
