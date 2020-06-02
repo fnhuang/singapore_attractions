@@ -144,10 +144,10 @@ class Preprocessor():
                 for row in csvr:
                     if "singapore" in row["reviewer_location"].lower():
                         l_reviews += 1
-                        l_ratings += int(row["review_star"])
+                        l_ratings += float(row["review_star"])
                     else:
                         v_reviews += 1
-                        v_ratings += int(row["review_star"])
+                        v_ratings += float(row["review_star"])
 
                 l_avg_ratings = l_ratings * 1.0 / l_reviews / 10
                 v_avg_ratings = v_ratings * 1.0 / v_reviews / 10
