@@ -133,6 +133,7 @@ class Preprocessor():
             all_files = os.listdir(f"{self.dir}/data")
 
             for filename in all_files:
+                print(filename)
                 l_reviews = 0
                 v_reviews = 0
                 l_ratings = 0
