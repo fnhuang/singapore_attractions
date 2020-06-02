@@ -133,7 +133,7 @@ class Preprocessor():
             all_files = os.listdir(f"{self.dir}/data")
 
             for filename in all_files:
-                print(filename)
+                #print(filename)
                 l_reviews = 0
                 v_reviews = 0
                 l_ratings = 0
@@ -150,12 +150,16 @@ class Preprocessor():
                         v_reviews += 1
                         v_ratings += float(row["review_star"])
 
-                l_avg_ratings = l_ratings * 1.0 / l_reviews / 10
-                v_avg_ratings = v_ratings * 1.0 / v_reviews / 10
+                l_avg_ratings = 0
+                v_avg_ratings = 0
+                if l_reviews > 0:
+                    l_avg_ratings = l_ratings * 1.0 / l_reviews
+                if v_reviews > 0:
+                    v_avg_ratings = v_ratings * 1.0 / v_reviews
 
                 a_reviews = l_reviews + v_reviews
                 a_ratings = v_ratings + l_ratings
-                a_avg_ratings = a_ratings * 1.0 / a_reviews/ 10
+                a_avg_ratings = a_ratings * 1.0 / a_reviews
 
                 csvw.writerow([filename, l_reviews, v_reviews, a_reviews, l_avg_ratings,
                                v_avg_ratings, a_avg_ratings])
