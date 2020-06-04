@@ -273,7 +273,7 @@ if __name__ == "__main__":
     '''dir = sys.argv[1]
     model = sys.argv[2]
     test_dir = sys.argv[3]'''
-    dir = "sentiment_analysis"
+    dir = "yelp_senti_analysis"
     model = "NB"
     test_dir = "testing"
     saz = SentimentAnalyzer(dir, model)
