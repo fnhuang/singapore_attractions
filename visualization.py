@@ -279,6 +279,7 @@ class Visualize():
         #print(info[info["latitude"].isnull()][["csv"]])
         #print(info.shape)
         #print(info.tail(5))
+        info.to_csv('basic_info.csv', encoding='utf-8')
         return info
 
     def get_rating_of_rarely_visited_places(self):
@@ -614,11 +615,11 @@ class Visualize():
 
 
 
-viz = Visualize("visualize","top299.csv","tripadvisor","tag")
-#viz = Visualize("visualize","yelp_top97.csv","yelp","region_tag")
-#viz.get_basic_file_info()
+#viz = Visualize("visualize","top299.csv","tripadvisor","tag")
+viz = Visualize("visualize","yelp_top97.csv","yelp","region_tag")
+viz.get_basic_file_info()
 #viz.cluster_tag_info(10, False)
-viz.get_tag_info("visitor")
+#viz.get_tag_info("visitor")
 #viz.get_rating_of_rarely_visited_places()
 #viz.get_local_visitor_stats()
 #viz.cluster_location()

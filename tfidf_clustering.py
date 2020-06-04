@@ -367,11 +367,13 @@ class TfidfCluster():
     def get_basic_file_info(self, file_name):
         info = pd.read_csv(f"{self.dir}/{file_name}")
 
-        info["name"] = info["name"].str.lower()
+        if 'name' in info.columns:
+            info["name"] = info["name"].str.lower()
         info["tag"] = info["tag"].str.lower()
 
-        info["csv"] = info["url"].map(lambda url: url[url.rindex("/"):].split("-"))
-        info["csv"] = info["csv"].map(lambda url: f"{url[len(url)-2].lower()}.csv")
+        if 'csv' not in info.columns:
+            info["csv"] = info["url"].map(lambda url: url[url.rindex("/"):].split("-"))
+            info["csv"] = info["csv"].map(lambda url: f"{url[len(url)-2].lower()}.csv")
 
         info = info.drop(["url","starting page","name"], axis=1)
 
