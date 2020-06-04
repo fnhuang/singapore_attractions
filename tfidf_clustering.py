@@ -200,6 +200,7 @@ class TfidfCluster():
     def _retrieve_most_common_words(self, docs):
         all_words = []
         for doc in docs:
+            # non-repeating words in a document
             all_words.extend(set([w for w in word_tokenize(doc.content.replace(".",""))]))
         docfdist = FreqDist(all_words)
 
@@ -210,7 +211,7 @@ class TfidfCluster():
         return docfdist
 
     def _combine_documents_of_the_same_group(self, documents):
-        basic_info = self.get_basic_file_info("top300.csv")
+        basic_info = self.get_basic_file_info("basic_info.csv")
 
         tags = set(basic_info["tag"])
         locations = set([d.location for d in documents])
@@ -536,12 +537,12 @@ class TfidfCluster():
         pickle.dump(self.kmeans_model, open(f"{self.dir}/{self.sentiment}_model/kmeans_model.pickle","wb"))
 
 if __name__ == "__main__":
-    dir = sys.argv[1]
-    sentiment = sys.argv[2]
-    model_dir = sys.argv[3]
-    model = sys.argv[4]
-    tc = TfidfCluster(dir, sentiment, model_dir, model)
-    #tc = TfidfCluster("tfidf_clustering","neg","sentiment_analysis","NB")
+    #dir = sys.argv[1]
+    #sentiment = sys.argv[2]
+    #model_dir = sys.argv[3]
+    #model = sys.argv[4]
+    #tc = TfidfCluster(dir, sentiment, model_dir, model)
+    tc = TfidfCluster("yelp_tfidf","neg","yelp_senti_analysis","NB")
     #tc.assess_k(0.8)
     #tc.run(14, 0.8)
     tc.get_local_foreigner_difference(1,True)

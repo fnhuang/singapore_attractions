@@ -100,6 +100,7 @@ class Preprocessor():
                     #put cleaned reviews in pos or neg dict
                     rating = float(row['review_star'])
                     sentiment = "pos" if rating >= 4 else "neg"
+                    print(sentiment)
 
                     #reflect in the dictionary which city a review comes from
                     city = row['reviewer_location'].strip().lower()
