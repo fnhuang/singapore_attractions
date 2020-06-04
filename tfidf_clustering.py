@@ -456,6 +456,9 @@ class TfidfCluster():
         for doc_name in doc_pairs:
             doc_count += 1
 
+            local_pdist = []
+            foreign_pdist = []
+
             # find unique words
             for loc_prob_tuple in doc_pairs[doc_name]:
                 if loc_prob_tuple[0] == "sgp":
@@ -465,7 +468,6 @@ class TfidfCluster():
 
             local_dict = {k: v for (k, v) in local_pdist}
             foreign_dict = {k: v for (k, v) in foreign_pdist}
-
 
             wdiff = self.rank_words(local_dict)
             filename = doc_name.replace(".csv", "") + "_sgp.csv"
