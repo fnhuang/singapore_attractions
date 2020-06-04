@@ -375,7 +375,10 @@ class TfidfCluster():
             info["csv"] = info["url"].map(lambda url: url[url.rindex("/"):].split("-"))
             info["csv"] = info["csv"].map(lambda url: f"{url[len(url)-2].lower()}.csv")
 
-        info = info.drop(["url","starting page","name"], axis=1)
+        to_be_dropped = ["url","starting page","name"]
+        for col in to_be_dropped:
+            if col in info.columns:
+                info = info.drop([col], axis=1)
 
         return info
 
