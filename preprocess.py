@@ -98,14 +98,17 @@ class Preprocessor():
                 for row in csvreader:
 
                     #put cleaned reviews in pos or neg dict
-                    rating = int(row['review_star'])
+                    rating = float(row['review_star'])
                     sentiment = "pos" if rating > 30 else "neg"
 
                     #reflect in the dictionary which city a review comes from
                     city = row['reviewer_location'].strip().lower()
                     location = "sgp" if "singapore" in city else "non" if city == "" else "ovs"
 
-                    text = f"{row['review_title']}. {row['review_content']}"
+                    if "review_title" in row.keys():
+                        text = f"{row['review_title']}. {row['review_content']}"
+                    else:
+                        text = row["review_content"]
                     cleaned_text = self.basic_preprocess(text)
 
                     if not cleaned_text.isspace():
@@ -177,4 +180,5 @@ if __name__ == "__main__":
     #file_dir = sys.argv[1]
     file_dir = "yelp_preprocess"
     ppc = Preprocessor(file_dir)
-    ppc.get_local_visitor_stats()
+    #ppc.get_local_visitor_stats()
+    ppc.run()

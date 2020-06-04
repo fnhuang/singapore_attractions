@@ -146,7 +146,10 @@ class Visualize():
         plt.show()
 
     def get_local_visitor_stats(self):
-        info = pd.read_csv(f"{self.dir}/local_visitor_stat.csv")
+        if self.data_source == "yelp":
+            info = pd.read_csv(f"{self.dir}/yelp_local_visitor_stat.csv")
+        else:
+            info = pd.read_csv(f"{self.dir}/local_visitor_stat.csv")
 
         l_reviews = list(info["l_reviews"])
         v_reviews = list(info["v_reviews"])
@@ -168,7 +171,7 @@ class Visualize():
         # Create boxplot of reviews and ratings
         bp = ax.boxplot(reviews_data, showfliers=False)
         plt.xticks([1, 2, 3], ['locals', 'tourists', "all"])
-        plt.show()
+        #plt.show()
 
         plt.close()
 
@@ -178,7 +181,7 @@ class Visualize():
 
         bp = ax.boxplot(ratings_data, showfliers=False)
         plt.xticks([1, 2, 3], ['locals', 'tourists', "all"])
-        plt.show()
+        #plt.show()
 
         plt.close()
 
@@ -197,10 +200,10 @@ class Visualize():
         print(rating_stats_correl)
 
         # create grouped bar plot of locals vs visitors statistics
-        self._make_grouped_bar_plot(info, "lrev_catego", "vrev_catego", "review")
+        #self._make_grouped_bar_plot(info, "lrev_catego", "vrev_catego", "review")
         plt.close()
 
-        self._make_grouped_bar_plot(info, "lrat_catego", "vrat_catego", "rating")
+        #self._make_grouped_bar_plot(info, "lrat_catego", "vrat_catego", "rating")
         plt.close()
         #print(info)
 
@@ -307,7 +310,7 @@ class Visualize():
 
 
         # print(review_vs_rating, review_vs_count, rating_vs_count)
-        # print(tag_info.sort_values(by=['rev_catego', 'rat_catego', 'count_catego'], ascending=False)[['rev_catego', 'rat_catego', 'count_catego']])
+        #print(tag_info.sort_values(by=['rev_catego', 'rat_catego', 'count_catego'], ascending=False)[['rev_catego', 'rat_catego', 'count_catego']])
         print(tag_info.sort_values(by=['rating'], ascending=False)["rating"])
         print(sum(tag_info["rating"]))
 
@@ -336,6 +339,15 @@ class Visualize():
         tag_info = grouped.mean()
         tag_info["count"] = grouped[[self.tag_type]].count()
 
+        tag_info["%neg_rating"] = 0.0
+        for i, row in tag_info.iterrows():
+            rating_list = basic_info[basic_info[self.tag_type] == i]["rating"].tolist()
+            neg_rating = [int(r < 4) for r in rating_list]
+            percent_neg = sum(neg_rating) * 1.0/len(neg_rating)
+            tag_info.at[i, '%neg_rating'] = percent_neg
+
+        #tag_info["%neg_rating"] = [r < 4 for r in basic_info[basic_info[self.tag_type] == ]]
+
         #sd_li = list(grouped[["reviews"]].std()["reviews"])
         #mu_li = list(tag_info["reviews"])
         #tag_info["reviews_sd"] = [i / j for i, j in zip(sd_li, mu_li)]
@@ -355,6 +367,7 @@ class Visualize():
 
         ratings = list(tag_info["rating"])
         tag_info["rat_catego"] = [self._get_catego(ratings, v) for v in ratings]
+        print(np.percentile(ratings, 40), np.percentile(ratings, 60))
 
         counts = list(tag_info["count"])
         tag_info["count_catego"] = [self._get_catego(counts, v) for v in counts]
@@ -376,8 +389,8 @@ class Visualize():
               np.max(tag_info["rating"]))'''
 
         #print(review_vs_rating, review_vs_count, rating_vs_count)
-        #print(tag_info.sort_values(by=['rev_catego', 'rat_catego', 'count_catego'], ascending=False)[['rev_catego', 'rat_catego', 'count_catego']])
-        print(tag_info.sort_values(by=['rating'], ascending=False)["rating"])
+        print(tag_info.sort_values(by=['rev_catego', 'rat_catego', 'count_catego'], ascending=False)[['rev_catego', 'rat_catego', 'count_catego','rating','%neg_rating']])
+        #print(tag_info.sort_values(by=['rating'], ascending=False)["rating"])
         #print(sum(tag_info["rating"]))
 
         return tag_info
@@ -601,14 +614,14 @@ class Visualize():
 
 
 
-#viz = Visualize("visualize","bottom500.csv","tripadvisor","tag")
-viz = Visualize("visualize","yelp_bottom782.csv","yelp","region_tag")
+viz = Visualize("visualize","top299.csv","tripadvisor","tag")
+#viz = Visualize("visualize","yelp_top97.csv","yelp","region_tag")
 #viz.get_basic_file_info()
 #viz.cluster_tag_info(10, False)
-#viz.get_tag_info("all")
+viz.get_tag_info("visitor")
 #viz.get_rating_of_rarely_visited_places()
 #viz.get_local_visitor_stats()
-viz.cluster_location()
+#viz.cluster_location()
 #viz.get_local_visitor_specs("low","med", "lrat_catego", "vrat_catego")
 #viz.get_local_visitor_category("theatres", "lrat_catego", "vrat_catego")
 #viz.draw_gradient_scatter_on_map("rating")
