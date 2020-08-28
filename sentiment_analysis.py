@@ -31,7 +31,7 @@ class SentimentAnalyzer():
         self.most_common_words = [w.strip() for w in open(f"{self.dir}/training/model/most_common_words.txt","r",encoding="utf8").readlines()] \
             if os.path.isfile(f"{self.dir}/training/model/most_common_words.txt") else []
 
-    # remove most common words (top 20%) that appear in both positive and negative documents
+    # remove most common words (top 1%) that appear in both positive and negative documents
     def _remove_most_common_words(self, documents):
         print("Define most common words...")
 
@@ -127,7 +127,6 @@ class SentimentAnalyzer():
         documents = self._undersample(documents)
 
         documents = self._reduce_dimension_by_postag(documents)
-
 
         documents = self._remove_most_common_words(documents)
 
@@ -273,7 +272,7 @@ if __name__ == "__main__":
     '''dir = sys.argv[1]
     model = sys.argv[2]
     test_dir = sys.argv[3]'''
-    dir = "yelp_senti_analysis"
+    dir = "sentiment_analysis"
     model = "NB"
     test_dir = "testing"
     saz = SentimentAnalyzer(dir, model)

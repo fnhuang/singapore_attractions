@@ -443,7 +443,7 @@ class TfidfCluster():
                 sent = " ".join(w[0].split("_"))
                 prob_dist = self.sentiment_classifier.sentiment(sent)
 
-                if prob_dist[0] == self.sentiment and prob_dist[1] > 0.8:
+                if prob_dist[0] == self.sentiment and prob_dist[1] > 0.6:
                     rep_words.append(w)
 
             doc_pairs.setdefault(doc.name,[]).append((doc.location, rep_words))
@@ -549,8 +549,10 @@ if __name__ == "__main__":
     #model_dir = sys.argv[3]
     #model = sys.argv[4]
     #tc = TfidfCluster(dir, sentiment, model_dir, model)
-    tc = TfidfCluster("yelp_tfidf","neg","yelp_senti_analysis","NB")
-    #tc.assess_k(0.8)
-    #tc.run(14, 0.8)
+    # tc.assess_k(0.8)
+    # tc.run(14, 0.8)
+    tc = TfidfCluster("yelp_tfidf","pos","yelp_senti_analysis","NB")
     tc.get_local_foreigner_difference(1,True)
+    tc = TfidfCluster("yelp_tfidf", "neg", "yelp_senti_analysis", "NB")
+    tc.get_local_foreigner_difference(1, True)
 

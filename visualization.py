@@ -165,22 +165,24 @@ class Visualize():
         # Create a figure instance
         fig = plt.figure(1, figsize=(9, 6))
         ax = fig.add_subplot(111)
-        ax.set_title("Locals vs Tourists Reviews")
+        ax.set_title("Locals vs Tourists Reviews", fontsize=18)
 
 
         # Create boxplot of reviews and ratings
         bp = ax.boxplot(reviews_data, showfliers=False)
-        plt.xticks([1, 2, 3], ['locals', 'tourists', "all"])
-        #plt.show()
+        plt.xticks([1, 2, 3], ['locals', 'tourists', "all"],fontsize=14)
+        plt.yticks(fontsize=14)
+        plt.show()
 
         plt.close()
 
         fig = plt.figure(1, figsize=(9, 6))
         ax = fig.add_subplot(111)
-        ax.set_title("Locals vs Tourists Ratings")
+        ax.set_title("Locals vs Tourists Ratings", fontsize=18)
 
         bp = ax.boxplot(ratings_data, showfliers=False)
-        plt.xticks([1, 2, 3], ['locals', 'tourists', "all"])
+        plt.xticks([1, 2, 3], ['locals', 'tourists', "all"], fontsize=14)
+        plt.yticks(fontsize=14)
         #plt.show()
 
         plt.close()
@@ -368,12 +370,11 @@ class Visualize():
 
         ratings = list(tag_info["rating"])
         tag_info["rat_catego"] = [self._get_catego(ratings, v) for v in ratings]
-        print(np.percentile(ratings, 40), np.percentile(ratings, 60))
 
         counts = list(tag_info["count"])
         tag_info["count_catego"] = [self._get_catego(counts, v) for v in counts]
 
-        '''print(np.min(tag_info["count"]), np.percentile(tag_info["count"], 25), np.percentile(tag_info["count"], 40),
+        print(np.min(tag_info["count"]), np.percentile(tag_info["count"], 25), np.percentile(tag_info["count"], 40),
               np.percentile(tag_info["count"], 60),
               np.percentile(tag_info["count"], 75),
               np.max(tag_info["count"]))
@@ -387,10 +388,10 @@ class Visualize():
               np.percentile(tag_info["rating"], 40),
               np.percentile(tag_info["rating"], 60),
               np.percentile(tag_info["rating"], 75),
-              np.max(tag_info["rating"]))'''
+              np.max(tag_info["rating"]))
 
-        #print(review_vs_rating, review_vs_count, rating_vs_count)
-        print(tag_info.sort_values(by=['rev_catego', 'rat_catego', 'count_catego'], ascending=False)[['rev_catego', 'rat_catego', 'count_catego','rating','%neg_rating']])
+        print(review_vs_rating, review_vs_count, rating_vs_count)
+        print(tag_info.sort_values(by=['count'], ascending=False)[['count','count_catego','reviews','rev_catego','rating','rat_catego','%neg_rating']])
         #print(tag_info.sort_values(by=['rating'], ascending=False)["rating"])
         #print(sum(tag_info["rating"]))
 
@@ -501,7 +502,7 @@ class Visualize():
         basic_info["location"] = basic_info.apply(lambda x: self._get_locational_cluster(x.latitude, x.longitude), axis=1)
 
         clusters = list(basic_info["location"])
-        print(basic_info[(basic_info["location"]=="Central") & (basic_info[self.tag_type]=="japanese")])
+        print(basic_info[(basic_info["location"]=="North-East") & (basic_info[self.tag_type]=="historic sites and walking areas")])
 
         #get info for each cluster
         for cluster in set(clusters):
@@ -532,7 +533,7 @@ class Visualize():
                        label=location)
             i += 1
 
-        ax.set_title('Plotting Spatial Data on Singapore Map')
+        ax.set_title('POIs with Fewer Than 25 Reviews')
         ax.set_xlim(BBox[0], BBox[1])
         ax.set_ylim(BBox[2], BBox[3])
         im = ax.imshow(sgmap, zorder=0, alpha=0.5,  extent=BBox, aspect='equal')
@@ -613,16 +614,127 @@ class Visualize():
                     to_be_printed += f"{z_score * (max(vals[i]) - min(vals[i])) + min(vals[i])},"
                 print(to_be_printed[0:len(to_be_printed) - 1])
 
+    def _get_word_similarity_for_sentiment(self, top_k, sentiment):
+        home_folder = f"{self.dir}/{self.data_source}/{sentiment}_results"
+
+        writer = open(f"{home_folder}/similarity.csv", "w", encoding="utf8")
+        writer.write("food type,similarity\n")
+
+        for file_name in os.listdir(f"{home_folder}/local_v_foreign"):
+            similarity = 0
+
+            if "_ovs" in file_name:
+                ovs_file = f"{home_folder}/local_v_foreign/{file_name}"
+                local_file = f"{home_folder}/local_v_foreign/{file_name.replace('_ovs','_sgp')}"
+
+                word_list = []
+
+                with open(ovs_file, "r", encoding="utf8") as reader:
+                    lines = reader.readlines()
+
+                    for line in lines:
+                        datas = line.split(",")
+                        word_list.append(datas[0])
+
+                with open(local_file, "r", encoding="utf8") as reader:
+                    lines = reader.readlines()
+
+                    for line in lines:
+                        datas = line.split(",")
+                        if datas[0] in word_list:
+                            index = word_list.index(datas[0])
+
+                            similarity += 1.0
+                        else:
+                            word_list.append(datas[0])
+
+                # Document similarity
+                similarity = similarity / len(word_list)
+
+                writer.write(f"{file_name.replace('_ovs.csv','')},{similarity}\n")
+                writer.flush()
+
+        writer.close()
+
+    def _draw_word_graph_for_sentiment(self, top_k, sentiment):
+        home_folder = f"{self.dir}/{self.data_source}/{sentiment}_results"
+
+        for file_name in os.listdir(f"{home_folder}/local_v_foreign"):
+
+            if "_ovs" in file_name:
+                ovs_file = f"{home_folder}/local_v_foreign/{file_name}"
+                local_file = f"{home_folder}/local_v_foreign/{file_name.replace('_ovs','_sgp')}"
+
+                word_list = []
+                foreign_values = []
+                local_values = []
+
+                with open(ovs_file,"r",encoding="utf8") as reader:
+                    lines = reader.readlines()
+
+                    for line in lines[0:top_k]:
+                        datas = line.split(",")
+                        word_list.append(datas[0])
+                        foreign_values.append(float(datas[1]))
+                        local_values.append(0)
+
+                with open(local_file,"r",encoding="utf8") as reader:
+                    lines = reader.readlines()
+
+                    for line in lines[0:top_k]:
+                        datas = line.split(",")
+                        if datas[0] in word_list:
+                            index = word_list.index(datas[0])
+                            foreign_values[index] = float(datas[1])
+                            local_values[index] = float(datas[1])
+
+                        else:
+                            word_list.append(datas[0])
+                            local_values.append(float(datas[1]))
+                            foreign_values.append(0)
+
+                '''if "asian fusion" in file_name:
+                    print(len(local_values), len(foreign_values))
+                    for i in range(0, len(word_list)):
+                        print(word_list[i], local_values[i], foreign_values[i])
+                    sys.exit()'''
+
+                # Start drawing graph
+                ind = np.arange(len(foreign_values))  # the x locations for the groups
+                width = 0.35
+
+                fig, ax = plt.subplots(figsize=(15,8))
+                rects1 = ax.bar(ind - width / 2, foreign_values, width, label='tourists')
+                rects2 = ax.bar(ind + width / 2, local_values, width, label='locals')
+
+                ax.set_ylabel('Scores')
+                senti = "negative" if sentiment == "neg" else "positive"
+                ax.set_title(f"Top {top_k} {senti} words "
+                             f"for {file_name.replace('_ovs.csv','')} food places")
+                ax.set_xticks(ind)
+                ax.set_xticklabels(word_list, rotation=90, fontsize=8)
+                ax.legend()
+
+                fig.tight_layout()
+
+                os.makedirs(os.path.dirname(f"{home_folder}/graphs/"), exist_ok=True)
+                plt.savefig(f"{home_folder}/graphs/{file_name.replace('_ovs.csv','.png')}")
+                plt.close()
 
 
-#viz = Visualize("visualize","top299.csv","tripadvisor","tag")
-viz = Visualize("visualize","yelp_top97.csv","yelp","region_tag")
-viz.get_basic_file_info()
+    def draw_word_graph(self, top_k):
+        self._draw_word_graph_for_sentiment(top_k, "neg")
+        self._draw_word_graph_for_sentiment(top_k, "pos")
+
+viz = Visualize("visualize","top299.csv","tripadvisor","tag")
+#viz = Visualize("visualize","yelp_top97.csv","yelp","region_tag")
+#viz.get_basic_file_info()
 #viz.cluster_tag_info(10, False)
-#viz.get_tag_info("visitor")
+#viz.get_tag_info("all")
 #viz.get_rating_of_rarely_visited_places()
-#viz.get_local_visitor_stats()
+viz.get_local_visitor_stats()
 #viz.cluster_location()
 #viz.get_local_visitor_specs("low","med", "lrat_catego", "vrat_catego")
 #viz.get_local_visitor_category("theatres", "lrat_catego", "vrat_catego")
 #viz.draw_gradient_scatter_on_map("rating")
+#viz.draw_word_graph(20)
