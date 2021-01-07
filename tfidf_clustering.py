@@ -1,5 +1,4 @@
-import preprocess
-from preprocess import Document
+from text_analysis.preprocess import Document
 import os, pickle, sys
 from nltk import FreqDist
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -8,7 +7,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 from scipy.sparse import csr_matrix
 import numpy as np
-from sentiment_analysis import SentimentAnalyzer
+from text_analysis.sentiment_analysis import SentimentAnalyzer
 from scipy import spatial, sparse
 import pandas as pd
 

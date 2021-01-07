@@ -6,3 +6,5 @@ yelp_preprocess
 tfidf_clustering
 tfidf_preprocess
 visualize
+yelp_senti_analysis
+yelp_tfidf
