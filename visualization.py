@@ -153,38 +153,43 @@ class Visualize():
             info = pd.read_csv(f"{self.dir}/local_visitor_stat.csv")
 
         basic_info = self.get_basic_file_info()[["csv", "reviews", "rating"]]
-
-        info = pd.merge(info, basic_info, on="csv", how="inner")
+        #data for Yelp is duplicated if there are more than one region
+        basic_info = basic_info.drop_duplicates(subset=['csv'])
 
         l_reviews = list(info["l_reviews"])
         v_reviews = list(info["v_reviews"])
         a_reviews = list(info["a_reviews"])
-        reviews = list(info["reviews"])
+        reviews = list(basic_info["reviews"])
+        print("TOTAL")
+        print(sum(l_reviews))
+        print(sum(v_reviews))
+        print(sum(a_reviews))
+        print((sum(l_reviews) + sum(v_reviews)) * 1.0 / sum(reviews))
 
         l_ratings = list(info["l_avg_ratings"])
         v_ratings = list(info["v_avg_ratings"])
         a_ratings = list(info["a_avg_ratings"])
-        ratings = list(info["rating"])
+        ratings = list(basic_info["rating"])
 
         reviews_data = [l_reviews, v_reviews, reviews]
-        ratings_data = [l_ratings, v_ratings, a_ratings]
+        ratings_data = [l_ratings, v_ratings, ratings]
 
         # Create a figure instance
         fig = plt.figure(1, figsize=(9, 6))
         ax = fig.add_subplot(111)
         ax.set_title("Locals vs Tourists Reviews", fontsize=18)
 
-        print(np.min(l_ratings), np.percentile(l_ratings,25), np.percentile(l_ratings,50),
-            np.percentile(l_ratings,75), np.max(l_ratings), np.average(l_ratings), np.std(l_ratings))
-        print(np.min(v_ratings), np.percentile(v_ratings, 25), np.percentile(v_ratings, 50),
-            np.percentile(v_ratings, 75), np.max(v_ratings), np.average(v_ratings), np.std(v_ratings))
-        print(np.min(ratings), np.percentile(ratings, 25), np.percentile(ratings, 50),
-              np.percentile(ratings, 75), np.max(ratings), np.average(ratings), np.std(ratings))
+        print(np.min(l_reviews), np.percentile(l_reviews,25), np.percentile(l_reviews,50),
+            np.percentile(l_reviews,75), np.max(l_reviews), np.average(l_reviews), np.std(l_reviews))
+        print(np.min(v_reviews), np.percentile(v_reviews, 25), np.percentile(v_reviews, 50),
+            np.percentile(v_reviews, 75), np.max(v_reviews), np.average(v_reviews), np.std(v_reviews))
+        print(np.min(reviews), np.percentile(reviews, 25), np.percentile(reviews, 50),
+              np.percentile(reviews, 75), np.max(reviews), np.average(reviews), np.std(reviews))
 
 
         # Create boxplot of reviews and ratings
         bp = ax.boxplot(reviews_data, showfliers=False)
-        plt.xticks([1, 2, 3], ['locals', 'tourists', "all"],fontsize=14)
+        plt.xticks([1, 2, 3], ['locals', 'tourists', "overall"],fontsize=14)
         plt.yticks(fontsize=14)
         plt.show()
 
@@ -197,7 +202,7 @@ class Visualize():
         bp = ax.boxplot(ratings_data, showfliers=False)
         plt.xticks([1, 2, 3], ['locals', 'tourists', "all"], fontsize=14)
         plt.yticks(fontsize=14)
-        #plt.show()
+        plt.show()
 
         plt.close()
 
@@ -294,7 +299,7 @@ class Visualize():
 
         #print(info[info["latitude"].isnull()][["csv"]])
         #print(info.shape)
-        print(info.tail(5))
+        #print(info.tail(5))
         info.to_csv('basic_info.csv', encoding='utf-8')
         return info
 
@@ -340,19 +345,19 @@ class Visualize():
             kmeans.fit(X)
             wcss.append(kmeans.inertia_)
         plt.plot(range(1, 21), wcss)
-        plt.title('Elbow Method')
+        #plt.title('Elbow Method')
         plt.xlabel('Number of clusters')
-        plt.ylabel('WCSS')
+        plt.ylabel('Inertia')
         plt.show()
 
 
 
     def draw_tag_cluster(self, reviewer):
-        tag_info = self.get_tag_info(reviewer)[["count_pctg", "rev_pctg", "rat_pctg"]]
+        tag_info = self.get_tag_info(reviewer)[["count_pctl", "rev_pctl", "rat_pctl"]]
 
-        count = list(tag_info["count_pctg"])
-        review = list(tag_info["rev_pctg"])
-        rating = list(tag_info["rat_pctg"])
+        count = list(tag_info["count_pctl"])
+        review = list(tag_info["rev_pctl"])
+        rating = list(tag_info["rat_pctl"])
         tag = list(tag_info.index)
 
         #cluster the tags
@@ -363,7 +368,7 @@ class Visualize():
 
         #self._get_k(X)
 
-        kmeans = KMeans(n_clusters=9, init='k-means++', max_iter=300, n_init=10, random_state=0)
+        kmeans = KMeans(n_clusters=8, init='k-means++', max_iter=300, n_init=10, random_state=0)
         kmeans.fit(X)
 
         colors = ['#000099', '#990000', '#009933', '#cc0099',
@@ -373,7 +378,7 @@ class Visualize():
             colors.append(f'#%02X%02X%02X' % (r(), r(), r()))'''
 
         print(kmeans.labels_)
-        for i in range(9):
+        for i in range(8):
             print("Cluster", i)
             indices = [j for j, x in enumerate(kmeans.labels_) if x == i]
             places = [tag[j] for j in indices]
@@ -445,18 +450,23 @@ class Visualize():
 
 
         reviews = list(tag_info["reviews"])
-        tag_info["rev_pctg"] = [sum(np.array(reviews) <= v) / len(reviews) for v in reviews]
+        tag_info["rev_pctl"] = [sum(np.array(reviews) <= v) / len(reviews) for v in reviews]
         tag_info["rev_catego"] = [self._get_catego(reviews, v) for v in reviews]
 
         ratings = list(tag_info["rating"])
-        tag_info["rat_pctg"] = [sum(np.array(ratings) <= v) / len(ratings) for v in ratings]
+        tag_info["rat_pctl"] = [sum(np.array(ratings) <= v) / len(ratings) for v in ratings]
         tag_info["rat_catego"] = [self._get_catego(ratings, v) for v in ratings]
 
         counts = list(tag_info["count"])
-        tag_info["count_pctg"] = [sum(np.array(counts) <= v) / len(counts) for v in counts]
+        tag_info["count_pctl"] = [sum(np.array(counts) <= v) / len(counts) for v in counts]
         tag_info["count_catego"] = [self._get_catego(counts, v) for v in counts]
 
-        print(np.min(tag_info["count"]), np.percentile(tag_info["count"], 25), np.percentile(tag_info["count"], 40),
+        tag_info["overall_demand"] = [(list(tag_info["rev_pctl"])[i] + list(tag_info["rat_pctl"])[i])/2 for i in range(0,len(tag_info))]
+        tag_info["mismatch"] = [(list(tag_info["count_pctl"])[i] - list(tag_info["overall_demand"])[i]) for i in range(0,len(tag_info))]
+        tag_info["abs_mismatch"] = [abs(list(tag_info["mismatch"])[i]) for i in range(0,len(tag_info))]
+        tag_info["MAA"] = [(list(tag_info["overall_demand"])[i] / (list(tag_info["abs_mismatch"])[i] + 1)) for i in range(0,len(tag_info))]
+
+        '''print(np.min(tag_info["count"]), np.percentile(tag_info["count"], 25), np.percentile(tag_info["count"], 40),
               np.percentile(tag_info["count"], 60),
               np.percentile(tag_info["count"], 75),
               np.max(tag_info["count"]))
@@ -473,9 +483,10 @@ class Visualize():
               np.max(tag_info["rating"]))
 
         print(review_vs_rating, review_vs_count, rating_vs_count)
-        print(tag_info.sort_values(by=['count'], ascending=False)[['count','count_pctg','reviews','rev_pctg','rating','rat_pctg','%neg_rating']])
+        print(tag_info.sort_values(by=['mismatch'], ascending=False)[['count','count_pctl','reviews','rev_pctl','rating','rat_pctl',
+                                                                   'overall_demand', 'mismatch', 'MAA']])
         #print(tag_info.sort_values(by=['rating'], ascending=False)["rating"])
-        #print(sum(tag_info["rating"]))
+        #print(sum(tag_info["rating"]))'''
 
         return tag_info
 
@@ -499,9 +510,9 @@ class Visualize():
         for poly in self.sg_poly["east"]:
             if Polygon(poly).contains(p):
                 area = "East"
-        if latitude == 1.395197 and longitude == 103.99177399999999 or \
+        if latitude == 1.395197 and longitude == 103.991774 or \
             latitude == 1.392677 and longitude == 103.979648 or \
-                latitude == 1.3920350000000001 and longitude == 103.97587 or \
+                latitude == 1.392035 and longitude == 103.97587 or \
             latitude == 1.392677 and longitude == 103.979648:
             area = "East"
 
@@ -578,13 +589,17 @@ class Visualize():
     def cluster_location(self):
         basic_info = self.get_basic_file_info()
 
-        #coords = basic_info[["latitude","longitude"]].values
-        #db = DBSCAN(eps=4/6371, min_samples=1, algorithm='auto', metric='haversine').fit(np.radians(coords))
-
         basic_info["location"] = basic_info.apply(lambda x: self._get_locational_cluster(x.latitude, x.longitude), axis=1)
 
         clusters = list(basic_info["location"])
-        print(basic_info[(basic_info["location"]=="North-East") & (basic_info[self.tag_type]=="historic sites and walking areas")])
+
+        #print(basic_info)
+        #filter
+        print(basic_info)
+        basic_info = basic_info[(basic_info[self.tag_type]=="shopping malls") |
+                                (basic_info[self.tag_type]=="") |
+                                (basic_info[self.tag_type] == "")]
+
 
         #get info for each cluster
         for cluster in set(clusters):
@@ -615,18 +630,12 @@ class Visualize():
                        label=location)
             i += 1
 
-        ax.set_title('POIs with Fewer Than 25 Reviews')
+        #ax.set_title('POIs with Fewer Than 25 Reviews')
         ax.set_xlim(BBox[0], BBox[1])
         ax.set_ylim(BBox[2], BBox[3])
         im = ax.imshow(sgmap, zorder=0, alpha=0.5,  extent=BBox, aspect='equal')
 
-        #divider = make_axes_locatable(ax)
-        #cax = divider.append_axes('right', size='5%', pad=0.05)
 
-        #cb = fig.colorbar(im, cax=cax)
-        #loc = np.arange(0, max(clusters), max(clusters) / float(len(colors)))
-        #cb.set_ticks(loc)
-        #cb.set_ticklabels(colors)
         plt.legend()
         plt.show()
 
@@ -811,11 +820,12 @@ class Visualize():
 viz = Visualize("visualize","top299.csv","tripadvisor","tag")
 #viz = Visualize("visualize","yelp_top97.csv","yelp","region_tag")
 #viz.get_basic_file_info()
+#viz.get_tag_info("all")
 #viz.draw_tag_cluster("all")
-viz.get_local_visitor_stats()
+#viz.get_local_visitor_stats()
 #viz.get_rating_of_rarely_visited_places()
 #viz.get_local_visitor_stats()
-##viz.cluster_location()
+viz.cluster_location()
 #viz.get_local_visitor_specs("low","med", "lrat_catego", "vrat_catego")
 #viz.get_local_visitor_category("theatres", "lrat_catego", "vrat_catego")
 #viz.draw_gradient_scatter_on_map("rating")
