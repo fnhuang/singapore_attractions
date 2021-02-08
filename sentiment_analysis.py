@@ -8,8 +8,8 @@ from sklearn.svm import SVC
 import os, sys
 import random
 import glob
-from preprocess import Document
-import preprocess
+from .preprocess import Document, Preprocessor
+from . import preprocess
 import csv
 
 class SentimentAnalyzer():
@@ -19,7 +19,7 @@ class SentimentAnalyzer():
     def __init__(self, dir, model):
         self.dir = dir
         self.model = model
-        self.preprocessor = preprocess.Preprocessor(dir)
+        self.preprocessor = Preprocessor(dir)
 
         # open existing files if a model has been built before. no need to reprocess
         self.classifier = pickle.load(open(f"{self.dir}/training/model/{model}_clf.pickle", "rb")) \
@@ -112,7 +112,7 @@ class SentimentAnalyzer():
         return undersampled_docs
 
 
-    # advanced preprocessing
+    # preprocessing
     def prepare_documents(self):
         documents = []
 
@@ -269,12 +269,14 @@ class SentimentAnalyzer():
 
 
 if __name__ == "__main__":
-    '''dir = sys.argv[1]
+    #dir = "sentiment_analysis"
+    #model = "NB"
+    #test_dir = "testing"
+
+    dir = sys.argv[1]
     model = sys.argv[2]
-    test_dir = sys.argv[3]'''
-    dir = "sentiment_analysis"
-    model = "NB"
-    test_dir = "testing"
+    test_dir = sys.argv[3]
+
     saz = SentimentAnalyzer(dir, model)
     saz.train(0.2)
     #saz.classify(test_dir)

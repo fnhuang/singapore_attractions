@@ -1,4 +1,4 @@
-import os,sys
+import os
 import csv
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -61,10 +61,7 @@ class Preprocessor():
 
         return " ".join(concise_sentences)
 
-
-    # this method creates a tabular file if it does not exist
-    # it also adds a header for the table
-    def create_tabular_file(self, file, header):
+    def add_header_to_file(self, file, header):
         if not os.path.isfile(file):
             with open(file, 'w', encoding='utf8', newline='') as writer:
                 csvwriter = csv.writer(writer)
