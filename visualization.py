@@ -8,17 +8,21 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
+import argparse
+import logging
 
 pd.set_option('display.max_columns', 15)
 pd.set_option('display.max_rows', 300)
 
+logging.basicConfig(level=logging.INFO)
+
 class Visualize():
 
-    def __init__(self, dir, file_name, data_source, tag_type):
+    def __init__(self, dir, file_name, data_source):
         self.dir = dir
         self.file_name = file_name
         self.data_source = data_source
-        self.tag_type = tag_type
+        self.tag_type = "tag"
         self.sg_poly = self._get_singapore_region_poly()
 
     def _get_singapore_region_poly(self):
@@ -78,15 +82,14 @@ class Visualize():
         info["lrat_catego"] = [self._get_catego(a_ratings, v) for v in l_ratings]
         info["vrat_catego"] = [self._get_catego(a_ratings, v) for v in v_ratings]
 
-        #print(info["tag"])
         subinfo = info[info[self.tag_type] == tag]
-        print(subinfo[(subinfo["lrat_catego"] == "very high") & (subinfo["vrat_catego"] == "high")])
+        logging.info(subinfo[(subinfo["lrat_catego"] == "very high") & (subinfo["vrat_catego"] == "high")])
 
         group_by_review = subinfo.groupby([l_column, v_column]).size().reset_index().rename(columns={0: 'count'})
         total = np.sum(group_by_review["count"])
         group_by_review["percentage"] = [v/total for v in group_by_review["count"]]
 
-        print(group_by_review.sort_values(by=['percentage'], ascending=False))
+        logging.info(group_by_review.sort_values(by=['percentage'], ascending=False))
 
 
     def get_local_visitor_stats(self):
@@ -103,11 +106,11 @@ class Visualize():
         v_reviews = list(info["v_reviews"])
         a_reviews = list(info["a_reviews"])
         reviews = list(basic_info["reviews"])
-        print("TOTAL")
-        print(sum(l_reviews))
-        print(sum(v_reviews))
-        print(sum(a_reviews))
-        print((sum(l_reviews) + sum(v_reviews)) * 1.0 / sum(reviews))
+        logging.info("TOTAL")
+        logging.info(sum(l_reviews))
+        logging.info(sum(v_reviews))
+        logging.info(sum(a_reviews))
+        logging.info((sum(l_reviews) + sum(v_reviews)) * 1.0 / sum(reviews))
 
         l_ratings = list(info["l_avg_ratings"])
         v_ratings = list(info["v_avg_ratings"])
@@ -122,11 +125,11 @@ class Visualize():
         ax = fig.add_subplot(111)
         ax.set_title("Locals vs Tourists Reviews", fontsize=18)
 
-        print(np.min(l_reviews), np.percentile(l_reviews,25), np.percentile(l_reviews,50),
+        logging.info(np.min(l_reviews), np.percentile(l_reviews,25), np.percentile(l_reviews,50),
             np.percentile(l_reviews,75), np.max(l_reviews), np.average(l_reviews), np.std(l_reviews))
-        print(np.min(v_reviews), np.percentile(v_reviews, 25), np.percentile(v_reviews, 50),
+        logging.info(np.min(v_reviews), np.percentile(v_reviews, 25), np.percentile(v_reviews, 50),
             np.percentile(v_reviews, 75), np.max(v_reviews), np.average(v_reviews), np.std(v_reviews))
-        print(np.min(reviews), np.percentile(reviews, 25), np.percentile(reviews, 50),
+        logging.info(np.min(reviews), np.percentile(reviews, 25), np.percentile(reviews, 50),
               np.percentile(reviews, 75), np.max(reviews), np.average(reviews), np.std(reviews))
 
 
@@ -157,17 +160,16 @@ class Visualize():
         # pearson correl info
         review_stats_correl = pearsonr(np.array(l_reviews).astype(np.float),
                                        np.array(v_reviews).astype(np.float))
-        print(review_stats_correl)
+        logging.info(review_stats_correl)
 
         rating_stats_correl = pearsonr(np.array(l_ratings).astype(np.float),
                                        np.array(v_ratings).astype(np.float))
-        print(rating_stats_correl)
+        logging.info(rating_stats_correl)
 
         # create grouped bar plot of locals vs visitors statistics
         plt.close()
 
-        plt.close()
-        #print(info)
+
 
         return info
 
@@ -205,9 +207,7 @@ class Visualize():
                 row[self.tag_type] = t
                 info = info.append(row, ignore_index=True)
 
-        #print(info[info["latitude"].isnull()][["csv"]])
-        #print(info.shape)
-        #print(info.tail(5))
+
         info.to_csv('basic_info.csv', encoding='utf-8')
         return info
 
@@ -224,10 +224,24 @@ class Visualize():
         plt.ylabel('Inertia')
         plt.show()
 
+    def find_k_for_clustering(self):
+        tag_info = self.get_info_group_by_tag("all")[["count_pctl", "rev_pctl", "rat_pctl"]]
 
+        count = list(tag_info["count_pctl"])
+        review = list(tag_info["rev_pctl"])
+        rating = list(tag_info["rat_pctl"])
+        tag = list(tag_info.index)
 
-    def cluster_rating_review_quantity(self, reviewer):
-        tag_info = self.get_info_group_by_tag(reviewer)[["count_pctl", "rev_pctl", "rat_pctl"]]
+        # cluster the tags
+        feature = []
+        for i in range(len(count)):
+            feature.append([rating[i], review[i], count[i]])
+        X = np.array(feature)
+
+        self._get_k(X)
+
+    def cluster_rating_review_quantity(self, k):
+        tag_info = self.get_info_group_by_tag("all")[["count_pctl", "rev_pctl", "rat_pctl"]]
 
         count = list(tag_info["count_pctl"])
         review = list(tag_info["rev_pctl"])
@@ -242,21 +256,22 @@ class Visualize():
 
         #self._get_k(X)
 
-        kmeans = KMeans(n_clusters=8, init='k-means++', max_iter=300, n_init=10, random_state=0)
+        kmeans = KMeans(n_clusters=k, init='k-means++', max_iter=300, n_init=10, random_state=0)
         kmeans.fit(X)
 
-        colors = ['#000099', '#990000', '#009933', '#cc0099',
-                  '#336699', '#333300', '#cc9900', '#ff5c33', '#ff0066']
-        '''r = lambda: random.randint(0, 255)
-        for o in range(9):
-            colors.append(f'#%02X%02X%02X' % (r(), r(), r()))'''
+        '''colors = ['#000099', '#990000', '#009933', '#cc0099',
+                  '#336699', '#333300', '#cc9900', '#ff5c33', '#ff0066']'''
+        colors = []
+        r = lambda: random.randint(0, 255)
+        for o in range(k):
+            colors.append(f'#%02X%02X%02X' % (r(), r(), r()))
 
-        print(kmeans.labels_)
-        for i in range(8):
-            print("Cluster", i)
+        logging.info(kmeans.labels_)
+        for i in range(k):
+            logging.info("Cluster", i)
             indices = [j for j, x in enumerate(kmeans.labels_) if x == i]
             places = [tag[j] for j in indices]
-            print(",".join(places))
+            logging.info(",".join(places))
 
         ax = plt.subplot(111, projection='3d')
 
@@ -268,7 +283,6 @@ class Visualize():
             ax.text(rating[i], review[i], count[i]+0.1,
                     '%s' % (tag[i][0:4]), size=6, zorder=1,
                     color='k')
-            #print(rating[i], review[i], count[i], tag[i])
 
         ax.set_xlabel('Rating')
         ax.set_ylabel('Review')
@@ -337,11 +351,9 @@ class Visualize():
 
 
 
-        #print(review_vs_rating, review_vs_count, rating_vs_count)
-        #print(tag_info.sort_values(by=['mismatch'], ascending=False)[['count','count_pctl','reviews',
-        # 'rev_pctl','rating','rat_pctl','overall_demand', 'mismatch', 'MAA']])
-        #print(tag_info.sort_values(by=['rating'], ascending=False)["rating"])
-        #print(sum(tag_info["rating"]))
+        logging.info(review_vs_rating, review_vs_count, rating_vs_count)
+        logging.info(tag_info.sort_values(by=['mismatch'], ascending=False)[['count','count_pctl','reviews',
+         'rev_pctl','rating','rat_pctl','overall_demand', 'mismatch', 'MAA']])
 
         return tag_info
 
@@ -380,13 +392,12 @@ class Visualize():
                 area = "West"
 
         if area == "Unknown":
-            print(latitude,longitude)
+            logging.error(latitude,longitude)
         return area
 
     def _get_specific_info(self, sub_info):
         tag_info = self.get_info_group_by_tag("all")
 
-        #print(sub_info)
         # includes get tag, % and location
         grouped = sub_info.groupby([self.tag_type])
         group_info = grouped.mean()
@@ -410,7 +421,6 @@ class Visualize():
                                      float(group_info[(group_info.index == i)]["count"]) * 100
                                     for i, row in group_info.iterrows()]
 
-        #print(group_info)
         return group_info
 
 
@@ -422,9 +432,8 @@ class Visualize():
 
         clusters = list(basic_info["location"])
 
-        #print(basic_info)
         #filter
-        print(basic_info)
+        logging.info(basic_info)
         basic_info = basic_info[(basic_info[self.tag_type]=="shopping malls") |
                                 (basic_info[self.tag_type]=="") |
                                 (basic_info[self.tag_type] == "")]
@@ -435,10 +444,8 @@ class Visualize():
             sub_info = basic_info[basic_info["location"] == cluster]
 
             spec = self._get_specific_info(sub_info)
-            print(cluster, ", total attractions:", sum(spec["count"]))
-            print(spec.sort_values(by=["concentration"], ascending=False)[["count","total","concentration"]])
-
-        #print(basic_info.sort_values(by=["location"], ascending=False))
+            logging.info(cluster, ", total attractions:", sum(spec["count"]))
+            logging.info(spec.sort_values(by=["concentration"], ascending=False)[["count","total","concentration"]])
 
         #draw map
         BBox = ((103.5599, 104.1353, 1.1858, 1.5036))
@@ -549,12 +556,6 @@ class Visualize():
                             local_values.append(float(datas[1]))
                             foreign_values.append(0)
 
-                '''if "asian fusion" in file_name:
-                    print(len(local_values), len(foreign_values))
-                    for i in range(0, len(word_list)):
-                        print(word_list[i], local_values[i], foreign_values[i])
-                    sys.exit()'''
-
                 # Start drawing graph
                 ind = np.arange(len(foreign_values))  # the x locations for the groups
                 width = 0.35
@@ -582,7 +583,26 @@ class Visualize():
         self._draw_word_graph_for_sentiment(top_k, "neg")
         self._draw_word_graph_for_sentiment(top_k, "pos")
 
-viz = Visualize("visualize","top299.csv","tripadvisor","tag")
-#viz = Visualize("visualize","yelp_top97.csv","yelp","region_tag")
-viz.cluster_location()
-viz.cluster_rating_review_quantity("all")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("dir", help="directory where you store data/results of visualization")
+    parser.add_argument("fname", help="file name of attraction indicators")
+    parser.add_argument("datsource", help="either tripadvisor/yelp")
+    parser.add_argument("k", help="k for clustering", type=int, const=1)
+    parser.add_argument("fun", help="function to run: (1) getk: plot inertia score for various values of k, "
+                                    "(2) cluster: cluster attractions based on reviews, ratings, quantity")
+    args = parser.parse_args()
+
+    #viz = Visualize("visualize","top299.csv","tripadvisor")
+    if args.datsource not in ["tripadvisor", "yelp"]:
+        sys.exit()
+        logging.error("Data type invalid. Please choose either tripadvisor or yelp")
+    else:
+        viz = Visualize(args.dir, args.fname, args.datsource)
+        if args.fun == "getk":
+            viz.find_k_for_clustering()
+        elif args.fun == "cluster":
+            viz.cluster_rating_review_quantity(args.k)
+        else:
+            sys.exit()
+            logging.error("Function out of scope. Choose either getk or cluster")

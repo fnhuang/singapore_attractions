@@ -7,6 +7,10 @@ from collections import namedtuple
 import pickle
 import glob
 import string
+import argparse
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 # document object
 Document = namedtuple("Document", "name content sentiment location")
@@ -22,6 +26,8 @@ class Preprocessor():
     def __init__(self, dir):
         self.dir = dir
         self.lemmatizer = WordNetLemmatizer()
+        if not os.path.exists(f"{dir}/results"): os.makedirs(f"{dir}/results")
+        if not os.path.exists(f"{dir}/data"): os.makedirs(f"{dir}/data")
 
 
     # perform basic text processing
@@ -97,7 +103,7 @@ class Preprocessor():
                     #put cleaned reviews in pos or neg dict
                     rating = float(row['review_star'])
                     sentiment = "pos" if rating >= 4 else "neg"
-                    print(sentiment)
+                    logging.info(sentiment)
 
                     #reflect in the dictionary which city a review comes from
                     city = row['reviewer_location'].strip().lower()
@@ -114,8 +120,8 @@ class Preprocessor():
 
 
                     rowid += 1.0
-                    print("\r", end='')
-                    print("Processing in progress",int(rowid*100/rownum),"% for",file,end='',flush=True)
+                    logging.info("\r", end='')
+                    logging.info("Processing in progress",int(rowid*100/rownum),"% for",file,end='',flush=True)
 
             pickle.dump(documents, open(f"{self.dir}/results/{file.replace('.csv','.pickle')}", "wb"))
 
@@ -134,7 +140,6 @@ class Preprocessor():
             all_files = os.listdir(f"{self.dir}/data")
 
             for filename in all_files:
-                #print(filename)
                 l_reviews = 0
                 v_reviews = 0
                 l_ratings = 0
@@ -167,16 +172,25 @@ class Preprocessor():
                 writer.flush()
 
                 file_count += 1
-                print("\r",end="")
-                print(f"Processing in progress...{file_count * 100.0 / len(all_files)}%", end="", flush=True)
+                logging.info("\r",end="")
+                logging.info(f"Processing in progress...{file_count * 100.0 / len(all_files)}%", end="", flush=True)
 
             reader.close()
             writer.close()
 
 
 if __name__ == "__main__":
-    #file_dir = sys.argv[1]
-    file_dir = "yelp_preprocess"
-    ppc = Preprocessor(file_dir)
-    ppc.get_local_visitor_stats()
-    #ppc.run()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("dir", "file directory where data and results are stored")
+    parser.add_argument("fun", "function to run: (1) psa: preprocess for senti analysis "
+                               " (2) lvs: calculate local visitor stats")
+    args = parser.parse_args()
+
+    ppc = Preprocessor(args.dir)
+    if args.fun == "psa":
+        ppc.run()
+    elif args.fun == "lvs":
+        ppc.get_local_visitor_stats()
+    else:
+        logging.error("function out of scope!")
+

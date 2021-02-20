@@ -1,4 +1,4 @@
-from text_analysis.preprocess import Document
+from preprocess import Document
 import os, pickle, sys
 from nltk import FreqDist
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -6,13 +6,15 @@ import nltk
 from sklearn.feature_extraction.text import TfidfVectorizer
 from scipy.sparse import csr_matrix
 import numpy as np
-from text_analysis.sentiment_analysis import SentimentAnalyzer
+from sentiment_analysis import SentimentAnalyzer
 import pandas as pd
-from . import preprocess
+import preprocess
+import argparse
+import logging
 
+logging.basicConfig(level=logging.INFO)
 
 class WordExtractor():
-    #print topic clusters into document
     #get non as ovs
 
     def __init__(self, dir, sentiment, sentiment_dir, sentiment_model):
@@ -48,17 +50,17 @@ class WordExtractor():
                     subdocs.append(Document(doc.name, cust_sentence, doc.sentiment, doc.location))
 
             file_count += 1
-            print("\r", end="")
-            print("Getting custom words", int(file_count * 100 / len(files)), "%", end="", flush=True)
-        print("")
+            logging.info("\r", end="")
+            logging.info("Getting custom words", int(file_count * 100 / len(files)), "%", end="", flush=True)
+        logging.info("")
 
-        print("Combining documents of the same location...")
+        logging.info("Combining documents of the same location...")
         ndocs = self._combine_documents_of_the_same_location(subdocs)
 
-        print("Combining documents of the same tags...")
+        logging.info("Combining documents of the same tags...")
         ndocs = self._combine_documents_of_the_same_group(ndocs)
 
-        print("Removing most common words")
+        logging.info("Removing most common words")
         ndocs = self.remove_most_common_words(ndocs, filter_xtrim)
 
         return ndocs
@@ -81,16 +83,15 @@ class WordExtractor():
                     subdocs.append(Document(doc.name, cust_sentence, doc.sentiment, doc.location))
 
             file_count += 1
-            print("\r", end="")
-            print("Getting custom words", int(file_count * 100 / len(files)), "%", end="", flush=True)
-        print("")
+            logging.info("\r", end="")
+            logging.info("Getting custom words", int(file_count * 100 / len(files)), "%", end="", flush=True)
+        logging.info("")
 
-        print("Combining documents of the same location...")
+        logging.info("Combining documents of the same location...")
         ndocs = self._combine_documents_of_the_same_location(subdocs)
 
-        print("Removing most common words")
+        logging.info("Removing most common words")
         ndocs = self.remove_most_common_words(ndocs, filter_xtrim)
-
 
         return ndocs
 
@@ -265,17 +266,13 @@ class WordExtractor():
         return wdiff
 
 
-    def run(self, filter_xtrim, by_group):
+    def run(self, filter_xtrim):
 
         if len(self.id2doc) == 0:
-            if by_group:
-                os.makedirs(os.path.dirname(f"{self.dir}/{self.sentiment}_model/"), exist_ok=True)
-                documents = self.prepare_documents_by_group(filter_xtrim)
-                self.transform_into_featuresets(documents)
-            else:
-                os.makedirs(os.path.dirname(f"{self.dir}/{self.sentiment}_model/"), exist_ok=True)
-                documents = self.prepare_documents(filter_xtrim)
-                self.transform_into_featuresets(documents)
+            os.makedirs(os.path.dirname(f"{self.dir}/{self.sentiment}_model/"), exist_ok=True)
+            documents = self.prepare_documents_by_group(filter_xtrim)
+            self.transform_into_featuresets(documents)
+
 
         os.makedirs(os.path.dirname(f"{self.dir}/{self.sentiment}_results/local_v_foreign/"), exist_ok=True)
 
@@ -287,7 +284,6 @@ class WordExtractor():
 
             # get word probability distribution - it is l2 normalized
             prob_dist = csr_matrix.toarray(self.tfidf_matrix[doc_num, :])[0]
-            # print(np.sum(np.square(prob_dist)))
 
             # get term (features) and its probability in descending format
             sorted_indices = np.argsort(prob_dist)[::-1]
@@ -310,8 +306,8 @@ class WordExtractor():
 
             doc_pairs.setdefault(doc.name,[]).append((doc.location, rep_words))
 
-            print("\r",end="")
-            print("Getting relevant sentimental words", int(doc_count/len(self.id2doc) * 100), "percent", end="", flush=True)
+            logging.info("\r",end="")
+            logging.info("Getting relevant sentimental words", int(doc_count/len(self.id2doc) * 100), "percent", end="", flush=True)
 
         # local-foreign review difference
         doc_count = 0
@@ -347,13 +343,18 @@ class WordExtractor():
 
 
 if __name__ == "__main__":
-    #tc = TfidfCluster("yelp_tfidf","pos","yelp_senti_analysis","NB")
-    dir = sys.argv[1]
-    sentiment = sys.argv[2]
-    model_dir = sys.argv[3]
-    model = sys.argv[4]
-    tc = WordExtractor(dir, sentiment, model_dir, model)
-    tc.run(1,True)
-    #tc = WordExtractor("yelp_tfidf", "neg", "yelp_senti_analysis", "NB")
-    #tc.run(1, True)
+    #tc = TfidfCluster("tfidf_clustering","pos","sentiment_analysis","NB")
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("dir", help="directory where you store data/results of word extraction")
+    parser.add_argument("senti", help="sentiment specification of reviews to extract (positive/negative reviews)")
+    parser.add_argument("moddir", help="directory to store training data/model of sentiment analysis")
+    parser.add_argument("model", help="sentiment analysis model you want to use")
+    args = parser.parse_args()
+
+    if args.senti not in ["pos","neg"]:
+        logging.info("Sentiment is not valid. Please specify either pos or neg")
+
+    tc = WordExtractor(args.dir, args.senti, args.moddir, args.model)
+    tc.run(1)
 

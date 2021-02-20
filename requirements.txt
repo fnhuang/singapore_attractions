@@ -1,0 +1,11 @@
+Shapely
+matplotlib
+nltk
+numpy
+pandas
+scikit-learn
+regex
+scipy
+beautifulsoup4
+selenium
+argparse
