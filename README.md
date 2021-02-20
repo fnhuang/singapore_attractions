@@ -40,7 +40,11 @@ types,cluster these types based on quantity, #reviews, ratings, and finally visu
 * `sentiment_analysis.py` - perform sentiment analysis.
 * `word_extractor.py` - extract relevant emotionally charged words from reviews. 
 * `visualization.py` - cluster attraction types based on review, rating, and quantity. 
-* `sample files` - 
+* `sample files` - sample files of input/output of code. 
+	* visualization_input.csv (list of singapore attractions that scraper outputs)
+	* sample_preprocess_input.csv (what scraper outputs)
+	* sample_senti_analysis_input.pickle (what preprocess outputs). This file is also an input for word_extractor.py
+
 
 ## Reproduction Instructions ##
 
