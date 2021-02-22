@@ -2,10 +2,9 @@ import numpy as np
 import random
 import pandas as pd
 from scipy.stats import pearsonr
-from sklearn.cluster import KMeans, DBSCAN
-import sys, os, csv
+from sklearn.cluster import KMeans
+import sys, os
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 import argparse
@@ -208,7 +207,7 @@ class Visualize():
                 info = info.append(row, ignore_index=True)
 
 
-        info.to_csv('basic_info.csv', encoding='utf-8')
+        #info.to_csv('basic_info.csv', encoding='utf-8')
         return info
 
 
@@ -585,18 +584,18 @@ class Visualize():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("dir", help="directory where you store data/results of visualization")
-    parser.add_argument("fname", help="file name of attraction indicators")
-    parser.add_argument("datsource", help="either tripadvisor/yelp")
-    parser.add_argument("k", help="k for clustering", type=int, const=1)
-    parser.add_argument("fun", help="function to run: (1) getk: plot inertia score for various values of k, "
+    parser.add_argument("--dir", help="directory where you store data/results of visualization")
+    parser.add_argument("--fname", help="file name of attraction indicators")
+    parser.add_argument("--datsource", help="either tripadvisor/yelp")
+    parser.add_argument("-k", help="k for clustering", type=int, default=1)
+    parser.add_argument("--fun", help="function to run: (1) getk: plot inertia score for various values of k, "
                                     "(2) cluster: cluster attractions based on reviews, ratings, quantity")
     args = parser.parse_args()
 
     #viz = Visualize("visualize","top299.csv","tripadvisor")
     if args.datsource not in ["tripadvisor", "yelp"]:
-        sys.exit()
         logging.error("Data type invalid. Please choose either tripadvisor or yelp")
+        sys.exit()
     else:
         viz = Visualize(args.dir, args.fname, args.datsource)
         if args.fun == "getk":
@@ -604,5 +603,5 @@ if __name__ == "__main__":
         elif args.fun == "cluster":
             viz.cluster_rating_review_quantity(args.k)
         else:
-            sys.exit()
             logging.error("Function out of scope. Choose either getk or cluster")
+            sys.exit()

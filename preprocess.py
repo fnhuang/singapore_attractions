@@ -120,8 +120,9 @@ class Preprocessor():
 
 
                     rowid += 1.0
-                    logging.info("\r", end='')
-                    logging.info("Processing in progress",int(rowid*100/rownum),"% for",file,end='',flush=True)
+                    logging.info("Processing in progress",int(rowid*100/rownum),"% for",file)
+                    #print("\r", end='')
+                    #print("Processing in progress", int(rowid * 100 / rownum), "% for", file, end='', flush=True)
 
             pickle.dump(documents, open(f"{self.dir}/results/{file.replace('.csv','.pickle')}", "wb"))
 
@@ -172,17 +173,17 @@ class Preprocessor():
                 writer.flush()
 
                 file_count += 1
-                logging.info("\r",end="")
-                logging.info(f"Processing in progress...{file_count * 100.0 / len(all_files)}%", end="", flush=True)
 
-            reader.close()
+                logging.info(f"Processing in progress...{file_count * 100.0 / len(all_files)}%")
+
+                reader.close()
             writer.close()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("dir", "file directory where data and results are stored")
-    parser.add_argument("fun", "function to run: (1) psa: preprocess for senti analysis "
+    parser.add_argument("--dir", help="file directory where data and results are stored")
+    parser.add_argument("--fun", help="function to run: (1) psa: preprocess for senti analysis "
                                " (2) lvs: calculate local visitor stats")
     args = parser.parse_args()
 

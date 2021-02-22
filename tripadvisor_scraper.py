@@ -16,8 +16,8 @@ logging.basicConfig(level=logging.INFO)
 
 class ReviewCrawler():
 
-    def __init__(self, linux_vm, url, sleep_time, web_driver):
-        self.linux_vm = linux_vm #crawl on cloud?
+    def __init__(self, headless, url, sleep_time, web_driver):
+        self.headless = headless #crawl on cloud?
         self.pages = {1:url} #page numbers and url
         self.pageNum = 1 #the page crawled
         self.url = url #the url crawled
@@ -35,7 +35,7 @@ class ReviewCrawler():
 
         #when in linux vm add these lines
         #solves devtoolactiveport problem
-        if self.linux_vm == 1:
+        if self.headless == 1:
             options.add_argument('--headless')
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
@@ -310,9 +310,9 @@ class ReviewCrawler():
                     longitude = location_data["longitude"]
                     values.append(latitude); values.append(longitude)
                 except:
-                    values.append("NA"); values.append("NA");
+                    values.append("NA"); values.append("NA")
             else:
-                values.append("NA"); values.append("NA");
+                values.append("NA"); values.append("NA")
 
             for i in range(1,6):
                 id = "ReviewRatingFilter_" + str(i)
@@ -366,9 +366,9 @@ def get_urls(start_crawl, end_crawl):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("vm", help="whether environment is linux")
-    parser.add_argument("sleep", help="sleeping duration after crawling each page")
-    parser.add_argument("driver", help="where you store chrome driver")
+    parser.add_argument("--headless", help="whether environment is linux")
+    parser.add_argument("--sleep", help="sleeping duration after crawling each page")
+    parser.add_argument("--driver", help="where you store chrome driver")
     parser.add_argument("--url", help="url to crawl")
     parser.add_argument("--urllist", help="list of urls to crawl")
     parser.add_argument("--srow", help="row in the list to start crawling", type=int, const=0)
@@ -379,7 +379,7 @@ if __name__ == "__main__":
     #for windows: C:\Program Files (x86)\Google\Chrome\chromedriver
 
     if args.url != None:
-        rc = ReviewCrawler(args.vm, args.url, args.sleep, args.driver)
+        rc = ReviewCrawler(args.headless, args.url, args.sleep, args.driver)
 
     if args.urllist != None:
         srow = args.srow
@@ -395,7 +395,7 @@ if __name__ == "__main__":
             for number in range(0, len(url_ids)):
                 url = urls[number]
                 start_time = datetime.datetime.now()
-                rc = ReviewCrawler(args.vm, url, args.sleep)
+                rc = ReviewCrawler(args.headless, url, args.sleep, args.driver)
                 rc.crawl()
                 finish_getting_data = datetime.datetime.now()
                 if rc.pageNum % 1000 != 0:

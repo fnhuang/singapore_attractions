@@ -295,7 +295,7 @@ class WordExtractor():
 
             word_prob = list(zip(sorted_features, sorted_prob))
 
-            # keep words with probability more than 0 and sentiment prob is larger than 0.9
+            # keep words with probability more than 0 and sentiment prob is larger than 0.6
             rep_words = []
             for w in [w for w in word_prob if w[1] > 0]:
                 sent = " ".join(w[0].split("_"))

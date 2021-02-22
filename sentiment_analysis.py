@@ -61,9 +61,9 @@ class SentimentAnalyzer():
             ncontent = " ".join([w for w in word_tokenize(d.content) if w not in most_common_words])
 
             ndocs.append(Document(d.name, ncontent, d.sentiment, d.location))
-            logging.info("\r", end="")
-            logging.info("Removing most common words progress", int(doc_count/len(documents) * 100), "%", end="", flush=True)
-        logging.info("")
+
+            logging.info("Removing most common words progress", int(doc_count/len(documents) * 100), "%")
+
         return ndocs
 
     # only keep adjectives, adverbs, and nouns
@@ -79,9 +79,9 @@ class SentimentAnalyzer():
                 reduced_documents.append(Document(doc.name, reduced_sentence, doc.sentiment, doc.location))
 
             doc_count += 1
-            logging.info("\r",end="")
-            logging.info("Reducing dimension in progress", int(doc_count*100/len(documents)), "%", end="", flush=True)
-        logging.info("")
+
+            logging.info("Reducing dimension in progress", int(doc_count*100/len(documents)), "%")
+
 
         return reduced_documents
 
@@ -150,9 +150,8 @@ class SentimentAnalyzer():
             featuresets.append(({w:True for w in word_tokenize(doc.content) if w in self.features}, doc.sentiment))
             doc_count += 1
 
-            logging.info("\r", end='')
-            logging.info("Preparing featureset in progress", int(doc_count*100/len(documents)),"%",end='', flush=True)
-        logging.info("")
+            logging.info("Preparing featureset in progress", int(doc_count*100/len(documents)),"%")
+
 
         return featuresets
 
@@ -186,8 +185,8 @@ class SentimentAnalyzer():
             self.classifier = nltk.NaiveBayesClassifier.train(trainset)
             self.classifier.show_most_informative_features(15)
         else:
-            sys.exit()
             logging.error("Model does not exist")
+            sys.exit()
 
         ''' #Models can be expanded
         elif self.model == "MNB":
@@ -225,7 +224,7 @@ class SentimentAnalyzer():
     def classify(self):
         logging.info("Start classifying...")
 
-        if not os.path.exists(f"{self.dir}/testing/results"): os.makedir(f"{self.dir}/testing/results")
+        if not os.path.exists(f"{self.dir}/testing/results"): os.makedirs(f"{self.dir}/testing/results")
 
         if self.classifier == None:
             self.train(0.2)
@@ -239,13 +238,13 @@ class SentimentAnalyzer():
 
         headers = ["review_page","review_title","review_content","review_star",
                                         "reviewer_location","review_date","crawled_date"]
-        os.makedirs(os.path.dirname(f"{self.dir}/{test_dir}/results/"), exist_ok=True)
+        os.makedirs(os.path.dirname(f"{self.dir}/testing/results/"), exist_ok=True)
 
         for file in tbp_files:
-            with open(f"{self.dir}/{test_dir}/data/{file}", "r", encoding="utf8") as f:
+            with open(f"{self.dir}/testing/data/{file}", "r", encoding="utf8") as f:
                 csvreader = csv.DictReader(f)
 
-                with open(f"{self.dir}/{test_dir}/results/{file}","w", encoding="utf8", newline="") \
+                with open(f"{self.dir}/testing/results/{file}","w", encoding="utf8", newline="") \
                         as w:
                     csvwriter = csv.writer(w)
                     csvwriter.writerow(headers)
@@ -270,8 +269,7 @@ class SentimentAnalyzer():
                         w.flush()
 
                         rowid += 1
-                        logging.info("\r", end='')
-                        logging.info("Classifying in progress",int(rowid*100/rownum),"% for",file, end='', flush=True)
+                        logging.info("Classifying in progress",int(rowid*100/rownum),"% for",file)
 
             with open(f"{self.dir}/testing/classify_done.txt","a",encoding="utf8") as writer:
                 writer.write(f"{file}\n")
@@ -284,9 +282,9 @@ if __name__ == "__main__":
     #test_dir = "testing"
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("dir", help="directory to store training data/model and testing data/results")
-    parser.add_argument("model", help="model you want to use")
-    parser.add_argument("fun", help="function you run: (1) train: train model (2) cls: classify")
+    parser.add_argument("--dir", help="directory to store training data/model and testing data/results")
+    parser.add_argument("--model", help="model you want to use")
+    parser.add_argument("--fun", help="function you run: (1) train: train model (2) cls: classify")
     args = parser.parse_args()
 
     saz = SentimentAnalyzer(args.dir, args.model)
