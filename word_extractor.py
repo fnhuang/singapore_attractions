@@ -50,8 +50,7 @@ class WordExtractor():
                     subdocs.append(Document(doc.name, cust_sentence, doc.sentiment, doc.location))
 
             file_count += 1
-            logging.info("\r", end="")
-            logging.info("Getting custom words", int(file_count * 100 / len(files)), "%", end="", flush=True)
+            logging.info("Getting custom words", int(file_count * 100 / len(files)), "%")
         logging.info("")
 
         logging.info("Combining documents of the same location...")
@@ -306,8 +305,7 @@ class WordExtractor():
 
             doc_pairs.setdefault(doc.name,[]).append((doc.location, rep_words))
 
-            logging.info("\r",end="")
-            logging.info("Getting relevant sentimental words", int(doc_count/len(self.id2doc) * 100), "percent", end="", flush=True)
+            logging.info("Getting relevant sentimental words", int(doc_count/len(self.id2doc) * 100), "percent")
 
         # local-foreign review difference
         doc_count = 0
@@ -346,10 +344,10 @@ if __name__ == "__main__":
     #tc = TfidfCluster("tfidf_clustering","pos","sentiment_analysis","NB")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("dir", help="directory where you store data/results of word extraction")
-    parser.add_argument("senti", help="sentiment specification of reviews to extract (positive/negative reviews)")
-    parser.add_argument("moddir", help="directory to store training data/model of sentiment analysis")
-    parser.add_argument("model", help="sentiment analysis model you want to use")
+    parser.add_argument("--dir", help="directory where you store data/results of word extraction")
+    parser.add_argument("--senti", help="sentiment specification of reviews to extract (positive/negative reviews)")
+    parser.add_argument("--moddir", help="directory to store training data/model of sentiment analysis")
+    parser.add_argument("--model", help="sentiment analysis model you want to use")
     args = parser.parse_args()
 
     if args.senti not in ["pos","neg"]:
