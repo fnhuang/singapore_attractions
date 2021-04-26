@@ -267,7 +267,7 @@ class Visualize():
 
         logging.info(kmeans.labels_)
         for i in range(k):
-            logging.info("Cluster", i)
+            logging.info(f"Cluster {i}")
             indices = [j for j, x in enumerate(kmeans.labels_) if x == i]
             places = [tag[j] for j in indices]
             logging.info(",".join(places))

@@ -305,7 +305,7 @@ class WordExtractor():
 
             doc_pairs.setdefault(doc.name,[]).append((doc.location, rep_words))
 
-            logging.info("Getting relevant sentimental words", int(doc_count/len(self.id2doc) * 100), "percent")
+            logging.info(f"Getting relevant sentimental words {int(doc_count/len(self.id2doc) * 100)} percent")
 
         # local-foreign review difference
         doc_count = 0
